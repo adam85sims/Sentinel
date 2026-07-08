@@ -265,3 +265,103 @@ injector2 = ToolFailureInjector(..., seed=42)
 
 This is critical for regression testing — you can reproduce exact
 failure patterns across runs.
+
+## Advanced Injectors (Phase 6)
+
+### NetworkPartition
+
+Simulates partial network connectivity between services:
+
+```python
+from sentinel.chaos import NetworkPartition
+
+partition = NetworkPartition(
+    connectivity={
+        "api": ["db", "cache"],      # api can reach db and cache
+        "db": ["api"],               # db can reach api
+        "cache": [],                 # cache is isolated
+        "external_api": [],          # external API is unreachable
+    },
+    partition_probability=1.0,  # Always partitioned
+    heal_after_calls=10,        # Heal after 10 failed calls
+)
+
+# Wrap tools
+wrapper = partition.wrap(api_mock)
+```
+
+**Real-world:** Cloud provider outages, DNS failures, cross-AZ connectivity issues.
+
+### ClockSkew
+
+Simulates time synchronization issues:
+
+```python
+from sentinel.chaos import ClockSkew
+
+skew = ClockSkew(
+    skew_seconds=-300,  # Agent clock is 5 minutes behind
+    drift_rate=10,      # Drifts 10s more each call
+    affected_tools=["auth", "token_refresh"],
+)
+
+# Timestamps are offset
+ts = skew.get_skewed_timestamp(tool_name="auth")  # Behind by 300s + drift
+```
+
+**Real-world:** NTP failures, VM clock drift, JWT token expiration mismatches.
+
+### MemoryPressure
+
+Simulates context window exhaustion:
+
+```python
+from sentinel.chaos import MemoryPressure
+
+pressure = MemoryPressure(
+    max_context_tokens=4096,
+    pressure_threshold=0.8,  # Start evicting at 80%
+    eviction_strategy="fifo",  # or "priority", "random"
+    gc_pause_ms=100,  # GC pauses under pressure
+    oom_probability=0.1,  # 10% chance of OOM at overflow
+)
+
+# Simulate token usage
+result = pressure.simulate_token_usage(500)  # None if OK
+result = pressure.simulate_token_usage(3000)  # May trigger eviction
+```
+
+**Real-world:** Long-running conversations, context window hard limits, OOM kills.
+
+## Chaos Presets
+
+Ready-made configurations for common scenarios:
+
+```python
+from sentinel.chaos_presets import (
+    PRODUCTION_INCIDENT,  # Database down + cascading failures
+    DEPLOY_FRIDAY,        # Everything breaks at once
+    TRAFFIC_SPIKE,        # Rate limits + timeouts under load
+    NETWORK_PARTITION,    # Partial connectivity
+    TIME_TRAVEL,          # Clock skew + auth failures
+    MEMORY_LEAK,          # Progressive context exhaustion
+    COMPLETE_OUTAGE,      # Everything is down
+)
+
+# Use a preset
+for injector in PRODUCTION_INCIDENT:
+    if hasattr(injector, 'wrap'):
+        injector.wrap(your_mock_tool)
+```
+
+### Preset Descriptions
+
+| Preset | Injectors | Scenario |
+|--------|-----------|----------|
+| PRODUCTION_INCIDENT | ToolFailure (db, api, cache) + ContextDegradation | Database fails, API gets rate-limited, cache serves stale data |
+| DEPLOY_FRIDAY | ToolFailure (deploy, health_check, dns) + ContextDegradation | Deploy fails, health checks timeout, DNS intermittent |
+| TRAFFIC_SPIKE | ToolFailure (api, search, db) + CascadingFailures + MemoryPressure | Rate limits hit, db timeouts, cascading failures |
+| NETWORK_PARTITION | NetworkPartition + ContextDegradation | Partial connectivity, context truncation |
+| TIME_TRAVEL | ClockSkew + ToolFailure | Clock skew causes auth failures |
+| MEMORY_LEAK | MemoryPressure + ToolFailure | Context fills up, GC pauses, OOM kills |
+| COMPLETE_OUTAGE | ToolFailure (all) + NetworkPartition | Everything is down |

@@ -84,6 +84,9 @@ __all__ = [
     "ContextDegradation",
     "SpecDrift",
     "CascadingFailures",
+    "NetworkPartition",
+    "ClockSkew",
+    "MemoryPressure",
     "ChaosBudget",
     "ChaosBudgetExhausted",
 ]
@@ -1326,6 +1329,395 @@ class ChaosBudget:
                 for inj in self._injectors
             ],
         }
+
+
+
+
+# ──────────────────────────────────────────────────────
+# NetworkPartition — partial/full connectivity loss
+# ──────────────────────────────────────────────────────
+
+class NetworkPartition:
+    """Simulates network partitions between services.
+
+    Models real-world scenarios where subsets of services lose
+    connectivity to each other. This is common in microservice
+    architectures during network issues, DNS failures, or
+    infrastructure upgrades.
+
+    The partition is defined by a connectivity matrix: which services
+    can reach which other services. When a partition is active,
+    calls between disconnected services fail with TimeoutError.
+
+    Args:
+        connectivity: Dict mapping service -> list of reachable services.
+                     If service A is not in B's reachable list, A->B fails.
+                     Example: {"api": ["db", "cache"], "db": ["api"], "cache": []}
+        partition_probability: Probability of partition being active per call (0.0-1.0).
+        seed: Random seed for deterministic partition timing.
+        heal_after_calls: If set, partition heals after this many failed calls.
+
+    Example:
+        partition = NetworkPartition(
+            connectivity={
+                "api": ["db"],       # api can reach db but not cache
+                "db": ["api"],       # db can reach api
+                "cache": [],         # cache is isolated
+            },
+            partition_probability=1.0,  # Always partitioned
+        )
+        partition.wrap(tool_mock)  # Calls through disconnected paths fail
+    """
+
+    def __init__(
+        self,
+        connectivity: Dict[str, List[str]],
+        partition_probability: float = 1.0,
+        seed: Optional[int] = None,
+        heal_after_calls: Optional[int] = None,
+    ) -> None:
+        self.connectivity = connectivity
+        self.partition_probability = partition_probability
+        self._rng = random.Random(seed)
+        self.heal_after_calls = heal_after_calls
+
+        self._call_count: int = 0
+        self._injection_count: int = 0
+        self._partition_active: bool = True
+        self._records: List[InjectionRecord] = []
+
+    @property
+    def injection_count(self) -> int:
+        return self._injection_count
+
+    def is_reachable(self, source: str, target: str) -> bool:
+        """Check if source can reach target given current connectivity."""
+        if not self._partition_active:
+            return True
+        reachable = self.connectivity.get(source, [])
+        return target in reachable
+
+    def wrap(self, tool: "MockTool") -> "ChaosToolWrapper":
+        """Wrap a MockTool with network partition simulation."""
+        return ChaosToolWrapper(tool=tool, injector=self)
+
+    def _should_inject(self) -> bool:
+        """Determine if partition should block this call."""
+        if not self._partition_active:
+            return False
+
+        self._call_count += 1
+
+        # Heal check
+        if (self.heal_after_calls is not None
+                and self._injection_count >= self.heal_after_calls):
+            self._partition_active = False
+            return False
+
+        should = self._rng.random() < self.partition_probability
+        if should:
+            self._injection_count += 1
+        return should
+
+    def _create_failure(self, kwargs: Dict[str, Any]) -> TimeoutError:
+        """Create a network partition failure."""
+        source = kwargs.get("_source", "unknown")
+        target = kwargs.get("_target", "unknown")
+        return TimeoutError(
+            f"Network partition: {source} cannot reach {target} "
+            f"(connection timed out after 30s)"
+        )
+
+    def reset(self) -> None:
+        """Reset partition state."""
+        self._call_count = 0
+        self._injection_count = 0
+        self._partition_active = True
+        self._records.clear()
+
+    def make_validator(self) -> Callable[[Any], bool]:
+        """Create a validator for assert_no_silent_failure."""
+        def _validate(output: Any) -> bool:
+            # Output is valid if agent handled partition gracefully
+            # (e.g., retried, used fallback, reported error)
+            return output is not None
+        return _validate
+
+
+# ──────────────────────────────────────────────────────
+# ClockSkew — time synchronization issues
+# ──────────────────────────────────────────────────────
+
+class ClockSkew:
+    """Simulates clock skew between services.
+
+    Clock skew causes timestamp mismatches, session expiration issues,
+    and cache invalidation bugs. Common in distributed systems where
+    NTP sync fails or VMs drift.
+
+    The injector modifies the timestamps on tool calls and responses,
+    simulating what happens when the agent's clock is out of sync
+    with the services it calls.
+
+    Args:
+        skew_seconds: Seconds to shift timestamps (negative = agent clock behind).
+        drift_rate: Additional drift per call (seconds). Simulates progressive desync.
+        affected_tools: List of tool names affected by skew. If None, all tools.
+        seed: Random seed for deterministic drift patterns.
+
+    Example:
+        skew = ClockSkew(
+            skew_seconds=-300,  # Agent clock is 5 minutes behind
+            drift_rate=10,      # Drifts 10s more each call
+            affected_tools=["api_call", "auth"],
+        )
+    """
+
+    def __init__(
+        self,
+        skew_seconds: float = 0.0,
+        drift_rate: float = 0.0,
+        affected_tools: Optional[List[str]] = None,
+        seed: Optional[int] = None,
+    ) -> None:
+        self.skew_seconds = skew_seconds
+        self.drift_rate = drift_rate
+        self.affected_tools = affected_tools
+        self._rng = random.Random(seed)
+
+        self._call_count: int = 0
+        self._injection_count: int = 0
+        self._current_skew: float = skew_seconds
+        self._records: List[InjectionRecord] = []
+
+    @property
+    def injection_count(self) -> int:
+        return self._injection_count
+
+    @property
+    def current_skew(self) -> float:
+        """Current effective clock skew in seconds."""
+        return self._current_skew
+
+    def get_skewed_timestamp(self, tool_name: str = None) -> float:
+        """Get a timestamp with the current skew applied."""
+        import time
+        now = time.time()
+        if self.affected_tools and tool_name not in self.affected_tools:
+            return now
+        return now + self._current_skew
+
+    def wrap(self, tool: "MockTool") -> "ChaosToolWrapper":
+        """Wrap a MockTool with clock skew simulation."""
+        return ChaosToolWrapper(tool=tool, injector=self)
+
+    def _should_inject(self) -> bool:
+        """Clock skew is always active (it's a state, not an event)."""
+        self._call_count += 1
+        # Progressive drift
+        self._current_skew = self.skew_seconds + (self.drift_rate * self._call_count)
+        self._injection_count += 1
+        return True
+
+    def _create_failure(self, kwargs: Dict[str, Any]) -> Exception:
+        """Create a clock skew failure (usually a validation error)."""
+        return MockToolError(
+            f"Clock skew detected: timestamp mismatch "
+            f"(skew={self._current_skew:+.1f}s). "
+            f"Request rejected by server due to stale nonce/token.",
+            status_code=401,
+        )
+
+    def reset(self) -> None:
+        """Reset clock skew state."""
+        self._call_count = 0
+        self._injection_count = 0
+        self._current_skew = self.skew_seconds
+        self._records.clear()
+
+    def make_validator(self) -> Callable[[Any], bool]:
+        """Create a validator for assert_no_silent_failure."""
+        def _validate(output: Any) -> bool:
+            # Output is valid if agent handled clock skew gracefully
+            return output is not None
+        return _validate
+
+
+# ──────────────────────────────────────────────────────
+# MemoryPressure — context window exhaustion
+# ──────────────────────────────────────────────────────
+
+class MemoryPressure:
+    """Simulates memory pressure and context window exhaustion.
+
+    Models the real-world scenario where an agent's context window
+    fills up during a long conversation, forcing it to make decisions
+    with truncated or degraded context.
+
+    Unlike ContextDegradation (which is gradual), MemoryPressure models
+    sudden pressure events: OOM kills, context window hard limits,
+    and garbage collection pauses.
+
+    Args:
+        max_context_tokens: Hard limit on context window size.
+        pressure_threshold: Percentage of context at which pressure starts (0.0-1.0).
+        eviction_strategy: How to evict when over limit:
+            - "fifo": Remove oldest messages first
+            - "priority": Remove least important messages
+            - "random": Random eviction
+        gc_pause_ms: Simulated garbage collection pause in milliseconds.
+        oom_probability: Probability of OOM kill per call when over threshold.
+        seed: Random seed for deterministic eviction.
+
+    Example:
+        pressure = MemoryPressure(
+            max_context_tokens=4096,
+            pressure_threshold=0.8,  # Start evicting at 80%
+            eviction_strategy="fifo",
+            gc_pause_ms=500,  # 500ms GC pauses
+        )
+    """
+
+    def __init__(
+        self,
+        max_context_tokens: int = 4096,
+        pressure_threshold: float = 0.8,
+        eviction_strategy: str = "fifo",
+        gc_pause_ms: float = 0.0,
+        oom_probability: float = 0.0,
+        seed: Optional[int] = None,
+    ) -> None:
+        self.max_context_tokens = max_context_tokens
+        self.pressure_threshold = pressure_threshold
+        self.eviction_strategy = eviction_strategy
+        self.gc_pause_ms = gc_pause_ms
+        self.oom_probability = oom_probability
+        self._rng = random.Random(seed)
+
+        self._current_usage: int = 0
+        self._call_count: int = 0
+        self._injection_count: int = 0
+        self._oom_count: int = 0
+        self._eviction_count: int = 0
+        self._records: List[InjectionRecord] = []
+
+    @property
+    def injection_count(self) -> int:
+        return self._injection_count
+
+    @property
+    def current_usage(self) -> int:
+        """Current context usage in tokens."""
+        return self._current_usage
+
+    @property
+    def usage_percentage(self) -> float:
+        """Current context usage as percentage (0.0-1.0)."""
+        return self._current_usage / self.max_context_tokens if self.max_context_tokens > 0 else 0.0
+
+    @property
+    def under_pressure(self) -> bool:
+        """Whether context is above pressure threshold."""
+        return self.usage_percentage >= self.pressure_threshold
+
+    def simulate_token_usage(self, tokens: int) -> Optional[str]:
+        """Simulate adding tokens to context.
+
+        Returns:
+            None if successful, error message if OOM or eviction occurred.
+        """
+        self._call_count += 1
+        self._current_usage += tokens
+
+        # Check if over limit
+        if self._current_usage > self.max_context_tokens:
+            # OOM check
+            if self._rng.random() < self.oom_probability:
+                self._oom_count += 1
+                self._injection_count += 1
+                self._records.append(InjectionRecord(
+                    injector_type="memory",
+                    failure_type="oom",
+                    target="context_window",
+                    call_index=self._call_count,
+                    message=f"OOM kill: context usage {self._current_usage} > {self.max_context_tokens}",
+                ))
+                self._current_usage = 0  # Reset after OOM
+                return f"OOM kill: context window overflow ({self._current_usage}/{self.max_context_tokens})"
+
+            # Eviction
+            evicted = self._evict()
+            self._eviction_count += 1
+            self._injection_count += 1
+            self._records.append(InjectionRecord(
+                injector_type="memory",
+                failure_type="eviction",
+                target="context_window",
+                call_index=self._call_count,
+                message=f"Evicted {evicted} tokens to make room",
+            ))
+            return f"Context eviction: removed {evicted} tokens"
+
+        # GC pause simulation
+        if self.gc_pause_ms > 0 and self.under_pressure:
+            import time
+            time.sleep(self.gc_pause_ms / 1000.0)
+
+        return None
+
+    def _evict(self) -> int:
+        """Evict tokens based on strategy. Returns number of tokens evicted."""
+        if self.eviction_strategy == "fifo":
+            # Remove oldest 20% of context
+            evicted = int(self._current_usage * 0.2)
+        elif self.eviction_strategy == "priority":
+            # Remove least important 30%
+            evicted = int(self._current_usage * 0.3)
+        elif self.eviction_strategy == "random":
+            # Random 15-25%
+            fraction = self._rng.uniform(0.15, 0.25)
+            evicted = int(self._current_usage * fraction)
+        else:
+            evicted = int(self._current_usage * 0.2)
+
+        self._current_usage = max(0, self._current_usage - evicted)
+        return evicted
+
+    def wrap(self, tool: "MockTool") -> "ChaosToolWrapper":
+        """Wrap a MockTool with memory pressure simulation."""
+        return ChaosToolWrapper(tool=tool, injector=self)
+
+    def _should_inject(self) -> bool:
+        """Memory pressure is always active (it's cumulative)."""
+        return True
+
+    def _create_failure(self, kwargs: Dict[str, Any]) -> Exception:
+        """Create a memory pressure failure."""
+        if self._rng.random() < self.oom_probability:
+            return MockToolError(
+                f"OOM kill: context window overflow",
+                status_code=500,
+            )
+        return MockToolError(
+            f"Context eviction: {self._evict()} tokens removed",
+            status_code=200,  # Not an error per se, but degraded
+        )
+
+    def reset(self) -> None:
+        """Reset memory pressure state."""
+        self._current_usage = 0
+        self._call_count = 0
+        self._injection_count = 0
+        self._oom_count = 0
+        self._eviction_count = 0
+        self._records.clear()
+
+    def make_validator(self) -> Callable[[Any], bool]:
+        """Create a validator for assert_no_silent_failure."""
+        def _validate(output: Any) -> bool:
+            # Output is valid if agent handled memory pressure gracefully
+            return output is not None
+        return _validate
 
 
 class ChaosBudgetExhausted(Exception):

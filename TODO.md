@@ -41,7 +41,7 @@
 - [x] Verify `pip install -e .` works from clean state (no leftover deps)
 - [x] Verify `pip install -e ".[all]"` installs all optional dependency groups
 - [x] Add version bumping strategy (hatch version or manual)
-- [ ] Create GitHub repo and push initial commit
+- [x] Create GitHub repo and push initial commit (https://github.com/adam85sims/Sentinel)
 - [x] Verify `pip install git+https://github.com/adam85sims/sentinel.git` works
 
 ## Phase 3: Documentation & Examples
@@ -109,9 +109,9 @@
 
 ## Blocked
 
-- GitHub repo creation — need to create repo at github.com/adam85sims/sentinel before pushing
+- (empty)
 
 ## Notes
 
 - `pip install -e ".[all]"` works but crewai takes 60+ seconds to resolve (heavy dependency tree)
-- SSH keys not configured on this machine — user needs to push manually or configure SSH
+- Repo renamed to Sentinel (capital S) at github.com/adam85sims/Sentinel

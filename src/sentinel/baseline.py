@@ -34,6 +34,14 @@ from sentinel.runner import SentinelAssertionResult, SentinelResult
 _DEFAULT_BASELINE_DIR = ".sentinel/baselines"
 
 
+__all__ = [
+    "BaselineMetadata",
+    "record_baseline",
+    "load_baseline",
+    "compare_baselines",
+]
+
+
 @dataclass
 class BaselineMetadata:
     """Metadata for a recorded baseline."""

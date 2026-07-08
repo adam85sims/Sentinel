@@ -348,7 +348,7 @@ python3 pattern-memory/cli.py clear
 python3 pattern-memory/server.py
 ```
 
-**13 MCP tools provided:**
+**Pattern Memory MCP tools (optional):**
 
 - `record_correction` — Record a user correction with context
 - `find_patterns` — Search for relevant patterns by query

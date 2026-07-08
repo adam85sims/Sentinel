@@ -51,6 +51,17 @@ from sentinel.models import AgentTrace, Error, ErrorSeverity, Step, StepAction
 # ──────────────────────────────────────────────────────
 
 
+__all__ = [
+    "AgentConfig",
+    "SentinelScenario",
+    "TestScenario",
+    "SentinelAssertionResult",
+    "SentinelResult",
+    "ScenarioRunner",
+    "sentinel_test",
+]
+
+
 @dataclass
 class AgentConfig:
     """Configuration for instantiating an agent under test.

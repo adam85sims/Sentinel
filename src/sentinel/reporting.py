@@ -26,6 +26,13 @@ from sentinel.runner import SentinelAssertionResult, SentinelResult
 # ──────────────────────────────────────────────────────
 
 
+__all__ = [
+    "ResultDelta",
+    "ScenarioDelta",
+    "RegressionReport",
+]
+
+
 class ResultDelta(str, Enum):
     """Classification of result changes between baseline and current."""
 

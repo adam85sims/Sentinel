@@ -66,6 +66,17 @@ class StateChange:
     timestamp: float = field(default_factory=time.time)
 
 
+__all__ = [
+    "ErrorSeverity",
+    "Error",
+    "StepAction",
+    "Step",
+    "StateChange",
+    "ToolCall",
+    "AgentTrace",
+]
+
+
 @dataclass
 class Error:
     """Records an error encountered during agent execution."""

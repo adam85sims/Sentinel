@@ -367,6 +367,12 @@ def audit(claims: dict, evidence: dict, config: dict = None,
     section = cfg.get(role) or cfg["primary"]
     retries = cfg.get("retry", {}).get("max_attempts", 3)
     backoff = cfg.get("retry", {}).get("backoff_seconds", 5)
+    # "none" backend: skip LLM entirely, return empty string
+    # The deterministic comparator in extract.py will still run
+    backend_type = cfg.get("backend", {}).get("type", "openai-compatible")
+    if backend_type == "none":
+        logger.info("Auditor backend is 'none' — skipping LLM, using deterministic comparator only")
+        return ""
 
     model_key = section["model"]
 

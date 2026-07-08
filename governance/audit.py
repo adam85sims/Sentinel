@@ -25,6 +25,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# Ensure project root is on sys.path for governance/common imports
+_project_root = str(Path(__file__).parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 from common.config import load_config
 from common.logging import get_logger, setup_logging
 from common.models import AuditResult, AuditResult, Verdict
@@ -102,7 +107,9 @@ def run_audit(project_root: str, diary_date: str = None,
 
     # Step 4: Post-process to extract structured findings
     logger.info("[4/5] Extracting findings...")
-    findings = extract_findings(raw_report, claims_dict, evidence_dict)
+    backend_type = auditor_cfg.get("backend", {}).get("type", "openai-compatible")
+    findings = extract_findings(raw_report, claims_dict, evidence_dict,
+                                deterministic_only=(backend_type == "none"))
 
     # Escalation: if primary model failed OR didn't emit valid JSON,
     # try the escalation model and merge findings.

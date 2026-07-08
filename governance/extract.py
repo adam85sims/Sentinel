@@ -59,7 +59,8 @@ def _safe_load_json(text: str) -> Optional[dict]:
 
 
 def extract_findings(report: str, claims: dict = None,
-                     evidence: dict = None) -> dict:
+                     evidence: dict = None,
+                     deterministic_only: bool = False) -> dict:
     """Extract structured findings from the auditor's response.
 
     Three sources of truth, in priority order:
@@ -78,19 +79,21 @@ def extract_findings(report: str, claims: dict = None,
     }
 
     # 1. Empty / None response = silent failure = CRITICAL
+    # When deterministic_only=True, empty report is expected (no LLM used)
     if not report or not report.strip():
-        findings["auditor_error"] = "Empty auditor response (silent failure)"
-        findings["discrepancies"].append({
-            "severity": "CRITICAL",
-            "type": "auditor_silent_failure",
-            "description": (
-                "Auditor returned empty response. Governance gate cannot "
-                "verify claims. Manual review required."
-            ),
-        })
-        findings["verdict"] = "FAIL"
-        findings["summary"] = "1 critical: auditor silent failure"
-        return findings
+        if not deterministic_only:
+            findings["auditor_error"] = "Empty auditor response (silent failure)"
+            findings["discrepancies"].append({
+                "severity": "CRITICAL",
+                "type": "auditor_silent_failure",
+                "description": (
+                    "Auditor returned empty response. Governance gate cannot "
+                    "verify claims. Manual review required."
+                ),
+            })
+            findings["verdict"] = "FAIL"
+            findings["summary"] = "1 critical: auditor silent failure"
+            return findings
 
     # 2. AUDITOR ERROR: prefix from auditor.py retry-exhaustion
     if report.strip().startswith("AUDITOR ERROR:"):

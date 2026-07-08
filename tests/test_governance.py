@@ -254,7 +254,7 @@ class TestAuditorConfig:
         cfg = load_auditor_config()
         assert "backend" in cfg
         assert "primary" in cfg
-        assert cfg["backend"]["type"] == "openai-compatible"
+        assert cfg["backend"]["type"] == "none"  # Default is deterministic-only
 
     def test_default_model(self):
         from governance.auditor import load_auditor_config

@@ -9,12 +9,15 @@
 #   "openai-compatible" — LM Studio, vLLM, LiteLLM, or any OpenAI-compatible API
 #   "ollama"            — Ollama's native API (http://localhost:11434)
 #   "none"              — skip LLM audit entirely (deterministic comparator only)
+#
+# Default is "none" — pure deterministic comparator, no LLM required.
+# This is the recommended setting for CI/CD and published packages.
+# To enable LLM auditing, change to "openai-compatible" or "ollama" and
+# configure the model below.
 backend:
-  type: "openai-compatible"
-  url: "http://localhost:1234/v1/chat/completions"
-  # Path to LM Studio's lms CLI binary (for model loading/listing)
-  # Set to null if not using LM Studio
-  lms_binary: "~/.lmstudio/bin/lms"
+  type: "none"
+  url: ""  # Set when using openai-compatible or ollama backend
+  lms_binary: ""  # Set when using LM Studio
 
 # Primary auditor — used for every claim-verification request.
 # Using base granite-4.1-3b (reverted from fine-tuned governance-granite

@@ -74,6 +74,21 @@ class LLMFailureType(str, Enum):
 # ──────────────────────────────────────────────────────
 
 
+__all__ = [
+    # Enums
+    "DegradationStrategy",
+    "DriftIntensity",
+    # Injectors
+    "ToolFailureInjector",
+    "LLMFailureInjector",
+    "ContextDegradation",
+    "SpecDrift",
+    "CascadingFailures",
+    "ChaosBudget",
+    "ChaosBudgetExhausted",
+]
+
+
 class DegradationStrategy(str, Enum):
     """Strategies for context degradation simulation."""
 

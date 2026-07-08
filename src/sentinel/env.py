@@ -39,6 +39,22 @@ class TimeoutError(MockToolError):
         super().__init__(message, status_code=408)
 
 
+__all__ = [
+    # Errors
+    "MockToolError",
+    "RateLimitError",
+    "TimeoutError",
+    # Core types
+    "MockToolCall",
+    "MockTool",
+    "MockAPI",
+    "MockDatabase",
+    # Builder
+    "EnvironmentBuilder",
+    "Environment",
+]
+
+
 @dataclass
 class MockToolCall:
     """Record of a single call to a mock tool.

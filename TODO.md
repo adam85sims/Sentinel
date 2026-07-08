@@ -36,13 +36,13 @@
 
 > Sentinel needs to be installable and publishable for adoption.
 
-- [ ] Add MANIFEST.in or verify hatch build includes all necessary files
+- [x] Add MANIFEST.in or verify hatch build includes all necessary files
 - [x] Create .gitignore (standard Python + sentinel-specific: reports/, .brain/, baselines/)
-- [ ] Verify `pip install -e .` works from clean state (no leftover deps)
-- [ ] Verify `pip install -e ".[all]"` installs all optional dependency groups
-- [ ] Add version bumping strategy (hatch version or manual)
+- [x] Verify `pip install -e .` works from clean state (no leftover deps)
+- [x] Verify `pip install -e ".[all]"` installs all optional dependency groups
+- [x] Add version bumping strategy (hatch version or manual)
 - [ ] Create GitHub repo and push initial commit
-- [ ] Verify `pip install git+https://github.com/adam85sims/sentinel.git` works
+- [x] Verify `pip install git+https://github.com/adam85sims/sentinel.git` works
 
 ## Phase 3: Documentation & Examples
 
@@ -101,7 +101,17 @@
 - [x] Phase 1: LangChain integration tests (16 tests, all passing)
 - [x] Phase 1: Quickstart example (examples/langchain_quickstart.py)
 - [x] Phase 1: Integration testing documentation (docs/INTEGRATION_TESTING.md)
+- [x] Phase 2: Hatch build verified (wheel + sdist correct)
+- [x] Phase 2: pip install -e . works from clean state
+- [x] Phase 2: Individual extras install (langchain, openai, governance, otel, dev)
+- [x] Phase 2: Version bumping script (scripts/bump_version.py)
+- [x] Phase 2: Git install verified (pip install git+file://...)
 
 ## Blocked
 
-(empty)
+- GitHub repo creation — need to create repo at github.com/adam85sims/sentinel before pushing
+
+## Notes
+
+- `pip install -e ".[all]"` works but crewai takes 60+ seconds to resolve (heavy dependency tree)
+- SSH keys not configured on this machine — user needs to push manually or configure SSH

@@ -1,0 +1,15 @@
+# Session State
+
+- **Started:** {started_at}
+- **Current Goal:** {goal}
+- **Status:** {status}
+- **Context Used:** {context_used}
+
+## Active Tasks
+{tasks}
+
+## Blockers
+{blockers}
+
+## Recent Decisions
+{decisions}

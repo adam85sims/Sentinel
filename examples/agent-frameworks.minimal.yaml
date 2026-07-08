@@ -1,0 +1,9 @@
+# Minimal agent-frameworks.yaml
+# Just governance — pattern-memory and automation use defaults
+
+governance:
+  src_dir: "src"
+  readme_path: "README.md"
+  test_command: ["python3", "-m", "pytest", "tests/", "-v", "--tb=short"]
+  test_cwd: "."
+  source_file_pattern: "**/*.py"

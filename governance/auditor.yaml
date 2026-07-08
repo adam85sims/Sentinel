@@ -1,0 +1,50 @@
+# Governance auditor configuration
+#
+# This file is the single source of truth for the auditor model.
+# auditor.py reads this at startup; if a model named here is not
+# present on disk, audit() raises before sending any HTTP request.
+
+# Backend configuration — which LLM service to use
+# Supported types:
+#   "openai-compatible" — LM Studio, vLLM, LiteLLM, or any OpenAI-compatible API
+#   "ollama"            — Ollama's native API (http://localhost:11434)
+#   "none"              — skip LLM audit entirely (deterministic comparator only)
+backend:
+  type: "openai-compatible"
+  url: "http://localhost:1234/v1/chat/completions"
+  # Path to LM Studio's lms CLI binary (for model loading/listing)
+  # Set to null if not using LM Studio
+  lms_binary: "~/.lmstudio/bin/lms"
+
+# Primary auditor — used for every claim-verification request.
+# Using base granite-4.1-3b (reverted from fine-tuned governance-granite
+# which over-triggers on wording diffs and hallucinates "actual: 0" for
+# counts despite evidence showing otherwise).
+primary:
+  model: ibm/granite-4.1-3b
+  context_length: 8192     # audit prompts are small; 8k is plenty
+  temperature: 0.0         # deterministic
+  max_tokens: 1024         # structured response only, no essays
+  gpu: max                 # full GPU offload
+  expect_on_disk: true     # fail loud if not downloaded
+
+# Escalation auditor — called when primary produces something
+# ambiguous, gets stuck, or disagrees with extract.py.
+escalation:
+  model: ibm/granite-3.2-8b
+  context_length: 8192
+  temperature: 0.0
+  max_tokens: 1024
+  gpu: max
+  expect_on_disk: true
+
+# Whether to keep models resident in VRAM between audits.
+keep_resident: true
+
+# Retry policy for silent failures.
+retry:
+  max_attempts: 3
+  backoff_seconds: 5
+
+# Failure semantics.
+on_exhausted_retries: critical

@@ -1,0 +1,54 @@
+# Full agent-frameworks.yaml
+# All modules configured — governance, pattern-memory, automation
+
+governance:
+  src_dir: "src"
+  readme_path: "README.md"
+  diary_dir: "updates"
+  test_dir: "tests"
+  test_command: ["python3", "-m", "pytest", "tests/", "-v", "--tb=short"]
+  test_cwd: "."
+  source_file_pattern: "**/*.py"
+  # Optional: if your project has an MCP server
+  # mcp_server_file: "src/server.py"
+
+pattern_memory:
+  sqlite_path: "~/.agent-frameworks/pattern-memory.db"
+  chroma_path: "http://127.0.0.1:8000"
+  # If ChromaDB is unavailable, storage falls back to SQLite-only automatically
+
+automation:
+  model_routing:
+    # High-reasoning tasks: research, architecture, code review, debugging
+    reasoning:
+      models:
+        - provider: "openai-compatible"
+          model: "claude-sonnet-4"
+        - provider: "ollama"
+          model: "qwen3:32b"      # Fallback if primary is unavailable
+      use_for:
+        - "research"
+        - "architecture"
+        - "code_review"
+        - "debugging"
+        - "writing"
+    # High-speed tasks: scaffolding, CRUD, boilerplate, test stubs
+    speed:
+      models:
+        - provider: "openai-compatible"
+          model: "deepseek-v4-flash"
+        - provider: "ollama"
+          model: "qwen3:8b"
+      use_for:
+        - "scaffolding"
+        - "crud"
+        - "boilerplate"
+        - "test_stubs"
+        - "ui_components"
+        - "data_processing"
+        - "integration_glue"
+
+  exit_conditions:
+    max_items_per_session: 3      # Stop after completing 3 items
+    context_usage_limit: 0.6     # Stop at 60% context usage
+    require_governance_pass: true  # Run audit before marking done

@@ -1,0 +1,28 @@
+# Auditor config for Ollama backend
+# Uses Ollama's OpenAI-compatible API on port 11434
+
+backend:
+  type: "openai-compatible"
+  url: "http://localhost:11434/v1/chat/completions"
+  api_key_env: "OLLAMA_API_KEY"     # Ollama doesn't need a key, but the field is here for the API contract
+
+primary:
+  model: "qwen3:32b"
+  context_length: 32768
+  temperature: 0.0
+  max_tokens: 2048
+  gpu: "max"
+  expect_on_disk: false            # Ollama manages its own model loading
+
+escalation:
+  model: "qwen3:32b"
+  context_length: 32768
+  temperature: 0.0
+  max_tokens: 2048
+  gpu: "max"
+  expect_on_disk: false
+
+keep_resident: true
+retry:
+  max_attempts: 3
+  backoff_seconds: 5

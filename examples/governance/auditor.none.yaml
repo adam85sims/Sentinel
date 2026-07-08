@@ -1,0 +1,31 @@
+# Auditor config for "none" backend
+# No LLM calls — uses deterministic comparators only
+# Useful for CI/CD or offline environments
+
+backend:
+  type: "none"
+
+# Model sections are ignored when backend type is "none"
+# The audit will only use the deterministic comparators in extract.py
+# This means it can catch:
+# - Test count mismatches (claimed vs actual)
+# - File existence checks
+# - MCP tool count mismatches
+# But cannot detect semantic inconsistencies
+
+primary:
+  model: "none"
+  context_length: 0
+  temperature: 0.0
+  max_tokens: 0
+
+escalation:
+  model: "none"
+  context_length: 0
+  temperature: 0.0
+  max_tokens: 0
+
+keep_resident: false
+retry:
+  max_attempts: 1
+  backoff_seconds: 0

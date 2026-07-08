@@ -1,0 +1,28 @@
+# Auditor config for vLLM backend
+# Uses vLLM's OpenAI-compatible API on port 8000
+
+backend:
+  type: "openai-compatible"
+  url: "http://localhost:8000/v1/chat/completions"
+  api_key_env: "VLLM_API_KEY"      # vLLM doesn't require a key by default
+
+primary:
+  model: "meta-llama/Llama-4-70B-Instruct"
+  context_length: 131072
+  temperature: 0.0
+  max_tokens: 4096
+  gpu: "max"
+  expect_on_disk: false            # vLLM loads models at startup, not on-demand
+
+escalation:
+  model: "meta-llama/Llama-4-70B-Instruct"
+  context_length: 131072
+  temperature: 0.0
+  max_tokens: 4096
+  gpu: "max"
+  expect_on_disk: false
+
+keep_resident: true
+retry:
+  max_attempts: 3
+  backoff_seconds: 10              # vLLM can be slow to respond under load

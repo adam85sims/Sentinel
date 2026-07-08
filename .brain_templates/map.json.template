@@ -1,0 +1,13 @@
+{
+  "_schema": "Project structural map. Updated by agent as it explores.",
+  "_fields": {
+    "entry_points": "List of main entry point files",
+    "key_components": "Map of component name -> path",
+    "test_commands": "How to run tests",
+    "config_files": "Configuration file locations"
+  },
+  "entry_points": [],
+  "key_components": {},
+  "test_commands": [],
+  "config_files": []
+}

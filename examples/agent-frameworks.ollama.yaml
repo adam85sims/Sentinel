@@ -1,0 +1,29 @@
+# Ollama-only agent-frameworks.yaml
+# Uses local Ollama models for everything — no cloud APIs
+
+governance:
+  src_dir: "src"
+  test_command: ["python3", "-m", "pytest", "tests/", "-v", "--tb=short"]
+  test_cwd: "."
+  source_file_pattern: "**/*.py"
+
+pattern_memory:
+  sqlite_path: "~/.agent-frameworks/pattern-memory.db"
+  chroma_path: "http://127.0.0.1:8000"
+
+automation:
+  model_routing:
+    reasoning:
+      models:
+        - provider: "ollama"
+          model: "qwen3:32b"
+      use_for: ["research", "architecture", "code_review", "debugging", "writing"]
+    speed:
+      models:
+        - provider: "ollama"
+          model: "qwen3:8b"
+      use_for: ["scaffolding", "crud", "boilerplate", "test_stubs"]
+
+  exit_conditions:
+    max_items_per_session: 3
+    context_usage_limit: 0.6

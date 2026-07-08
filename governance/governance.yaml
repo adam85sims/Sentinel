@@ -1,0 +1,33 @@
+# Project Governance Config
+# Controls what evidence.py and audit.py look for during verification runs.
+# This file is project-specific — copy to your project root and customize.
+
+# The directory containing source files (for listing and timestamp checks)
+src_dir: "src"
+
+# The main README file of the project
+readme_path: "README.md"
+
+# The file containing MCP server tool definitions (optional, skip tool counting if not set)
+mcp_server_file: "pattern-memory/server.py"
+
+# The directory containing markdown updates/diaries
+diary_dir: "updates"
+
+# Test settings
+test_dir: "tests"
+
+# The command to execute to run the test suite
+test_command:
+  - "python3"
+  - "-m"
+  - "pytest"
+  - "tests/"
+  - "-v"
+  - "--tb=short"
+
+# The working directory from which to run the test command (relative to project root)
+test_cwd: "."
+
+# File pattern to scan for source files
+source_file_pattern: "**/*.py"

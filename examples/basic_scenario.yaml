@@ -1,0 +1,28 @@
+# Basic Scenario — Minimal YAML test
+#
+# Run: sentinel run --path examples/basic_scenario.yaml
+#
+# This scenario tests a simple search agent that calls one tool.
+
+id: search-basic-001
+name: Basic search agent
+description: Agent searches for information and returns results
+task: "Search for 'refund policy' and return the results"
+
+# Environment: mock tools the agent can use
+env_config:
+  tools:
+    search:
+      response:
+        results:
+          - "Refund policy: 30-day money back guarantee"
+          - "Contact support@example.com for refunds"
+
+# Tags for filtering
+tags:
+  - basic
+  - search
+  - smoke-test
+
+# Timeout in seconds
+timeout_seconds: 30

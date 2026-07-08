@@ -1,0 +1,43 @@
+# Chaos Scenario — Tool failure injection
+#
+# Run: sentinel run --path examples/chaos_scenario.yaml
+#
+# This scenario tests an agent's resilience when tools fail.
+# The search tool will fail with a timeout error, and the agent
+# should handle it gracefully (fallback to cache or report the error).
+
+id: chaos-search-timeout-001
+name: Search tool timeout resilience
+description: |
+  Agent must handle search tool timeouts gracefully.
+  When the search API times out, the agent should:
+  1. Not crash
+  2. Either retry, use cached data, or report the failure
+  3. Still complete the task if possible
+
+task: "Search for 'current exchange rates' and report findings"
+
+# Environment with failing tools
+env_config:
+  tools:
+    search:
+      # Tool will timeout on every call
+      side_effect: "timeout"
+      error_message: "Search API timed out after 30s"
+    cache:
+      # Cache still works — agent should fall back to it
+      response:
+        rates:
+          USD: 1.0
+          EUR: 0.85
+          GBP: 0.73
+        source: "cached-data-2024-01-15"
+        warning: "Using cached data — live API unavailable"
+
+tags:
+  - chaos
+  - timeout
+  - resilience
+  - regression
+
+timeout_seconds: 60

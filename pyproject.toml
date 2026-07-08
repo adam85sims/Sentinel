@@ -31,11 +31,11 @@ dependencies = []
 [project.optional-dependencies]
 # Framework adapters — only install what you use
 langchain = ["langchain-core>=0.3.0"]
-crewai = ["crewai>=0.80.0"]
+crewai = ["crewai>=0.10.0"]
 openai = ["openai>=1.0.0"]
 adapters = [
     "langchain-core>=0.3.0",
-    "crewai>=0.80.0",
+    "crewai>=0.10.0",
     "openai>=1.0.0",
 ]
 
@@ -55,7 +55,7 @@ dev = [
 # Everything
 all = [
     "langchain-core>=0.3.0",
-    "crewai>=0.80.0",
+    "crewai>=0.10.0",
     "openai>=1.0.0",
     "pyyaml>=6.0",
     "opentelemetry-sdk>=1.0.0",
@@ -86,7 +86,7 @@ markers = [
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "0.1.0"
 line-length = 100
 
 [tool.ruff.lint]

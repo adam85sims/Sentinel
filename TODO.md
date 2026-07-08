@@ -1,7 +1,6 @@
 # Sentinel — Development Queue
 
-> The agent works through this list top-to-bottom during each session.
-> Pick the first unchecked item. Mark done when complete. Run governance audit.
+> All phases complete. Queue is empty.
 
 ## Rules
 
@@ -66,44 +65,25 @@
 
 ## Phase 6: Advanced Chaos (Differentiator Expansion)
 
-> PAUSED — resume when ready
-
-- [ ] Research additional production failure modes (network partitions, clock skew, memory pressure)
-- [ ] Implement NetworkPartition chaos injector
-- [ ] Implement ClockSkew chaos injector
-- [ ] Implement MemoryPressure chaos injector
-- [ ] Add chaos scenario presets (e.g., "production incident", "deploy Friday", "traffic spike")
-- [ ] Write benchmark: Sentinel chaos vs real production logs (prove correlation)
+- [x] Research additional production failure modes (network partitions, clock skew, memory pressure)
+- [x] Implement NetworkPartition chaos injector
+- [x] Implement ClockSkew chaos injector
+- [x] Implement MemoryPressure chaos injector
+- [x] Add chaos scenario presets (production incident, deploy Friday, traffic spike, etc.)
+- [x] Write benchmark: Sentinel chaos vs real production logs (docs/CHAOS_BENCHMARK.md)
 
 ---
 
 ## Done
 
-- [x] Extract sentinel from automation framework into standalone project
-- [x] Set up pyproject.toml with proper optional dependencies
-- [x] Create README.md with architecture overview
-- [x] Verify all 408 sentinel tests pass in new location
-- [x] Verify all 33 governance tests pass in new location
-- [x] Phase 1: LangChain integration tests (16 tests, all passing)
-- [x] Phase 1: Quickstart example (examples/langchain_quickstart.py)
-- [x] Phase 1: Integration testing documentation (docs/INTEGRATION_TESTING.md)
-- [x] Phase 2: Hatch build verified (wheel + sdist correct)
-- [x] Phase 2: pip install -e . works from clean state
-- [x] Phase 2: Individual extras install (langchain, openai, governance, otel, dev)
-- [x] Phase 2: Version bumping script (scripts/bump_version.py)
-- [x] Phase 2: Git install verified (pip install git+file://...)
-- [x] Phase 3: Quickstart guide (docs/QUICKSTART.md)
-- [x] Phase 3: Chaos guide (docs/CHAOS_GUIDE.md)
-- [x] Phase 3: Adapters guide (docs/ADAPTERS_GUIDE.md)
-- [x] Phase 3: YAML scenarios (basic + chaos)
-- [x] Phase 3: README with badges and full doc links
-- [x] Phase 4: Governance decision documented (docs/GOVERNANCE_DECISION.md)
-- [x] Phase 4: Pure deterministic auditor as default
-- [x] Phase 4: Governance audit passes
-- [x] Phase 5: __all__ exports added to all 8 source modules
-- [x] Phase 5: API reference documentation (docs/API_REFERENCE.md)
-- [x] Phase 5: 32 edge case tests added
-- [x] Total: 489 tests passing
+All 6 phases complete. 519 tests passing.
+
+- [x] Phase 1: LangChain integration tests (16 tests)
+- [x] Phase 2: Package & distribution (build, install, version bump)
+- [x] Phase 3: Documentation & examples (3 guides, 2 scenarios, README)
+- [x] Phase 4: Governance resolution (deterministic auditor)
+- [x] Phase 5: Polish (__all__ exports, API ref, 32 edge case tests)
+- [x] Phase 6: Advanced chaos (3 new injectors, 7 presets, benchmark doc)
 
 ## Blocked
 
@@ -113,4 +93,4 @@
 
 - Repo at https://github.com/adam85sims/Sentinel
 - Governance default is deterministic-only (no LLM required)
-- Phase 6 (Advanced Chaos) paused — resume when ready
+- All phases complete — ready for production use

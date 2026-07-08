@@ -25,19 +25,19 @@
 > The gap between "proof of concept" and "proof of value" is real agent testing.
 > Everything is mock-tested today. We need to prove Sentinel catches real regressions.
 
-- [ ] Install langchain-core and create a minimal LangChain agent (ReAct pattern, 2 tools)
-- [ ] Write integration test: run LangChain agent through Sentinel with mock environment
-- [ ] Inject a tool failure mid-run and verify Sentinel catches the behavioral regression
-- [ ] Write integration test: context degradation scenario with real LangChain agent
-- [ ] Create example script: `examples/langchain_quickstart.py` — runnable demo
-- [ ] Document integration test results in docs/INTEGRATION_TESTING.md
+- [x] Install langchain-core and create a minimal LangChain agent (ReAct pattern, 2 tools)
+- [x] Write integration test: run LangChain agent through Sentinel with mock environment
+- [x] Inject a tool failure mid-run and verify Sentinel catches the behavioral regression
+- [x] Write integration test: context degradation scenario with real LangChain agent
+- [x] Create example script: `examples/langchain_quickstart.py` — runnable demo
+- [x] Document integration test results in docs/INTEGRATION_TESTING.md
 
 ## Phase 2: Package & Distribution
 
 > Sentinel needs to be installable and publishable for adoption.
 
 - [ ] Add MANIFEST.in or verify hatch build includes all necessary files
-- [ ] Create .gitignore (standard Python + sentinel-specific: reports/, .brain/, baselines/)
+- [x] Create .gitignore (standard Python + sentinel-specific: reports/, .brain/, baselines/)
 - [ ] Verify `pip install -e .` works from clean state (no leftover deps)
 - [ ] Verify `pip install -e ".[all]"` installs all optional dependency groups
 - [ ] Add version bumping strategy (hatch version or manual)
@@ -53,7 +53,7 @@
 - [ ] Create docs/ADAPTERS_GUIDE.md — how to write custom adapters
 - [ ] Create examples/basic_scenario.yaml — minimal YAML scenario
 - [ ] Create examples/chaos_scenario.yaml — chaos injection demo
-- [ ] Create examples/langchain_integration.py — real agent test
+- [x] Create examples/langchain_quickstart.py — runnable demo (created in Phase 1)
 - [ ] Update README.md with badges (CI, coverage, version)
 
 ## Phase 4: Governance Model Resolution
@@ -98,6 +98,9 @@
 - [x] Create README.md with architecture overview
 - [x] Verify all 408 sentinel tests pass in new location
 - [x] Verify all 33 governance tests pass in new location
+- [x] Phase 1: LangChain integration tests (16 tests, all passing)
+- [x] Phase 1: Quickstart example (examples/langchain_quickstart.py)
+- [x] Phase 1: Integration testing documentation (docs/INTEGRATION_TESTING.md)
 
 ## Blocked
 

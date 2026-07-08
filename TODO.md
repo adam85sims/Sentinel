@@ -22,9 +22,6 @@
 
 ## Phase 1: Proof of Value (Real Agent Integration)
 
-> The gap between "proof of concept" and "proof of value" is real agent testing.
-> Everything is mock-tested today. We need to prove Sentinel catches real regressions.
-
 - [x] Install langchain-core and create a minimal LangChain agent (ReAct pattern, 2 tools)
 - [x] Write integration test: run LangChain agent through Sentinel with mock environment
 - [x] Inject a tool failure mid-run and verify Sentinel catches the behavioral regression
@@ -33,8 +30,6 @@
 - [x] Document integration test results in docs/INTEGRATION_TESTING.md
 
 ## Phase 2: Package & Distribution
-
-> Sentinel needs to be installable and publishable for adoption.
 
 - [x] Add MANIFEST.in or verify hatch build includes all necessary files
 - [x] Create .gitignore (standard Python + sentinel-specific: reports/, .brain/, baselines/)
@@ -46,15 +41,13 @@
 
 ## Phase 3: Documentation & Examples
 
-> Developer adoption requires clear docs and runnable examples.
-
-- [ ] Create docs/QUICKSTART.md — 5-minute guide from install to first test
-- [ ] Create docs/CHAOS_GUIDE.md — deep dive on chaos injection patterns
-- [ ] Create docs/ADAPTERS_GUIDE.md — how to write custom adapters
-- [ ] Create examples/basic_scenario.yaml — minimal YAML scenario
-- [ ] Create examples/chaos_scenario.yaml — chaos injection demo
+- [x] Create docs/QUICKSTART.md — 5-minute guide from install to first test
+- [x] Create docs/CHAOS_GUIDE.md — deep dive on chaos injection patterns
+- [x] Create docs/ADAPTERS_GUIDE.md — how to write custom adapters
+- [x] Create examples/basic_scenario.yaml — minimal YAML scenario
+- [x] Create examples/chaos_scenario.yaml — chaos injection demo
 - [x] Create examples/langchain_quickstart.py — runnable demo (created in Phase 1)
-- [ ] Update README.md with badges (CI, coverage, version)
+- [x] Update README.md with badges (CI, coverage, version)
 
 ## Phase 4: Governance Model Resolution
 
@@ -106,12 +99,18 @@
 - [x] Phase 2: Individual extras install (langchain, openai, governance, otel, dev)
 - [x] Phase 2: Version bumping script (scripts/bump_version.py)
 - [x] Phase 2: Git install verified (pip install git+file://...)
+- [x] Phase 3: Quickstart guide (docs/QUICKSTART.md)
+- [x] Phase 3: Chaos guide (docs/CHAOS_GUIDE.md)
+- [x] Phase 3: Adapters guide (docs/ADAPTERS_GUIDE.md)
+- [x] Phase 3: YAML scenarios (basic + chaos)
+- [x] Phase 3: README with badges and full doc links
+- [x] Phase 3: All pushed to GitHub
 
 ## Blocked
 
-- (empty)
+(empty)
 
 ## Notes
 
 - `pip install -e ".[all]"` works but crewai takes 60+ seconds to resolve (heavy dependency tree)
-- Repo renamed to Sentinel (capital S) at github.com/adam85sims/Sentinel
+- Repo at https://github.com/adam85sims/Sentinel

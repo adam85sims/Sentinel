@@ -65,10 +65,10 @@ class TimeoutError(MockToolError):
 Core data structures for agent traces.
 
 ```python
-class StepAction(str, Enum):
+class StepAction(StrEnum):
     PLAN, TOOL_CALL, REASON, RESPOND, ERROR
 
-class ErrorSeverity(str, Enum):
+class ErrorSeverity(StrEnum):
     LOW, MEDIUM, HIGH, CRITICAL
 
 class Step:
@@ -175,8 +175,10 @@ class SpecDrift:
 
 class CascadingFailures:
     """Simulate multi-agent error propagation."""
-    def __init__(self, dependency_graph: Dict[str, List[str]],
-                 cascade_probability: float = 0.7, max_depth: int = 3)
+    def __init__(self, cascade_probability: float = 0.5,
+                 max_cascade_depth: int = 3,
+                 propagation_delay_steps: int = 1,
+                 seed: Optional[int] = None)
 
 class ChaosBudget:
     """Hard cap on total failures per run."""
@@ -186,10 +188,10 @@ class ChaosBudget:
 ### Enums
 
 ```python
-class DegradationStrategy(str, Enum):
+class DegradationStrategy(StrEnum):
     TRUNCATION, NOISE, DRIFT
 
-class DriftIntensity(str, Enum):
+class DriftIntensity(StrEnum):
     SUBTLE, MODERATE, AGGRESSIVE
 ```
 
@@ -250,7 +252,6 @@ JSON-based baseline storage with git integration.
 ```python
 def record_baseline(results: List[SentinelResult], path: str = None) -> str
 def load_baseline(path: str) -> dict
-def compare_baselines(old: dict, new: dict) -> RegressionReport
 ```
 
 ## sentinel.otel

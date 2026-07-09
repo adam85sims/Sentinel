@@ -2,7 +2,7 @@
 Sentinel — Agent Behavioral Testing Platform
 Tests what agents DO, not just what they SAY.
 """
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from sentinel.assertions import (
     assert_graceful_degradation,

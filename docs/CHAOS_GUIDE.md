@@ -102,14 +102,9 @@ Simulates multi-agent error propagation:
 from sentinel.chaos import CascadingFailures
 
 cascade = CascadingFailures(
-    dependency_graph={
-        "database": ["api_server"],
-        "api_server": ["ui"],
-        "scheduler": ["database", "cache"],
-    },
     cascade_probability=0.7,  # 70% chance error propagates
-    max_depth=3,              # Max cascade hops
-    propagation_delay=0.1,    # Seconds between hops
+    max_cascade_depth=3,      # Max cascade hops
+    propagation_delay_steps=1, # Steps between cascade levels
 )
 
 # When database fails, api_server likely fails too
@@ -179,8 +174,8 @@ context = ContextDegradation(
 
 # Database failure cascades to API
 cascade = CascadingFailures(
-    dependency_graph={"database": ["api"]},
     cascade_probability=0.5,
+    max_cascade_depth=3,
 )
 
 # Apply to mocks
@@ -232,8 +227,8 @@ injectors = [
     ToolFailureInjector("api", failure_type="rate_limit", probability=0.4),
     ToolFailureInjector("database", failure_type="timeout", probability=0.2),
     CascadingFailures(
-        dependency_graph={"database": ["api", "cache"]},
         cascade_probability=0.6,
+        max_cascade_depth=3,
     ),
 ]
 ```

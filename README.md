@@ -130,10 +130,8 @@ degradation = ContextDegradation(strategy="TRUNCATION")
 
 # Cascade failures from database to API to UI
 cascade = CascadingFailures(
-    dependency_graph={
-        "database": ["api_server"],
-        "api_server": ["ui"],
-    },
+    cascade_probability=0.7,
+    max_cascade_depth=3,
 )
 
 # Cap total failures per run

@@ -16,7 +16,7 @@ import os
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from sentinel.models import (
     AgentTrace,
@@ -374,6 +374,3 @@ def delete_baseline(label: str, project_root: Optional[str] = None) -> bool:
         return True
     return False
 
-
-# Type hint for the tuple return
-from typing import Tuple

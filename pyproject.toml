@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sentinel"
-version = "0.1.0"
+version = "0.2.0"
 description = "Agent Behavioral Testing Platform — tests what agents DO, not just what they SAY"
 readme = "README.md"
 license = "MIT"
@@ -86,7 +86,7 @@ markers = [
 ]
 
 [tool.ruff]
-target-version = "0.1.0"
+target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]

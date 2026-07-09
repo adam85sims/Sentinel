@@ -28,6 +28,8 @@ Usage:
 
 from __future__ import annotations
 
+import copy
+import hashlib
 import random
 import time
 from dataclasses import dataclass, field
@@ -43,8 +45,6 @@ from sentinel.env import (
 )
 from sentinel.models import AgentTrace, Step, StateChange
 
-import copy
-import hashlib
 # ──────────────────────────────────────────────────────
 # Failure type enumerations
 # ──────────────────────────────────────────────────────

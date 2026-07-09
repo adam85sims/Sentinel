@@ -19,37 +19,6 @@ from sentinel.models import AgentTrace, ToolCall
 # ──────────────────────────────────────────────────────
 
 
-__all__ = [
-    # Core assertions
-    "assert_tool_called",
-    "assert_tool_not_called",
-    "assert_tool_call_order",
-    "assert_tool_call_count",
-    "assert_no_tool_errors",
-    # State assertions
-    "assert_state_consistent",
-    "assert_state_changed",
-    "assert_state_not_stale",
-    "assert_state_consistent_across_traces",
-    "assert_state_no_collisions",
-    # Governance assertions
-    "assert_permission_respected",
-    "assert_permission_violated",
-    "assert_tool_called_at_most",
-    "assert_tool_allowlist",
-    "assert_tool_denylist",
-    "assert_approval_before_action",
-    # Resilience assertions
-    "assert_graceful_degradation",
-    "assert_no_silent_failure",
-    # Performance assertions
-    "assert_latency",
-    "assert_token_usage",
-    "assert_step_count",
-    "assert_tool_latency",
-]
-
-
 def assert_tool_called(
     trace: AgentTrace,
     tool_name: str,
@@ -286,6 +255,7 @@ __all__ = [
     "assert_state_not_stale",
     "assert_state_consistent_across_traces",
     "assert_state_no_collisions",
+    "detect_state_collisions",
     # Governance assertions
     "assert_permission_respected",
     "assert_permission_violated",

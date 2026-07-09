@@ -39,12 +39,12 @@ from __future__ import annotations
 import functools
 import time
 import traceback
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 
-from sentinel.env import Environment, EnvironmentBuilder, MockTool
-from sentinel.models import AgentTrace, Error, ErrorSeverity, Step, StepAction
-
+from sentinel.env import Environment, EnvironmentBuilder
+from sentinel.models import AgentTrace, Error, ErrorSeverity
 
 # ──────────────────────────────────────────────────────
 # AgentConfig — how to instantiate an agent
@@ -80,12 +80,12 @@ class AgentConfig:
                  If provided, takes precedence over agent_type.
     """
 
-    agent_type: Optional[str] = None
+    agent_type: str | None = None
     model: str = "unknown"
-    tools: List[str] = field(default_factory=list)
+    tools: list[str] = field(default_factory=list)
     prompt: str = ""
-    kwargs: Dict[str, Any] = field(default_factory=dict)
-    factory: Optional[Callable[..., Any]] = field(default=None, repr=False)
+    kwargs: dict[str, Any] = field(default_factory=dict)
+    factory: Callable[..., Any] | None = field(default=None, repr=False)
 
 
 # ──────────────────────────────────────────────────────
@@ -109,14 +109,14 @@ class SentinelScenario:
     id: str
     name: str
     description: str = ""
-    agent_config: Optional[AgentConfig] = None
-    environment: Optional[Environment] = None
-    env_config: Dict[str, Any] = field(default_factory=dict)
-    chaos_config: Dict[str, Any] = field(default_factory=dict)
+    agent_config: AgentConfig | None = None
+    environment: Environment | None = None
+    env_config: dict[str, Any] = field(default_factory=dict)
+    chaos_config: dict[str, Any] = field(default_factory=dict)
     task: str = ""
-    assertions: List[Callable[..., None]] = field(default_factory=list)
+    assertions: list[Callable[..., None]] = field(default_factory=list)
     timeout_seconds: int = 30
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
 
 # TestScenario is the canonical public name (architecture §6.1).
@@ -136,7 +136,7 @@ class SentinelAssertionResult:
 
     assertion_name: str
     passed: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
     duration_ms: float = 0.0
 
 
@@ -151,9 +151,9 @@ class SentinelResult:
     scenario_name: str
     passed: bool
     trace: AgentTrace = field(default_factory=AgentTrace)
-    assertion_results: List[SentinelAssertionResult] = field(default_factory=list)
+    assertion_results: list[SentinelAssertionResult] = field(default_factory=list)
     duration_ms: float = 0.0
-    error: Optional[str] = None
+    error: str | None = None
     timestamp: float = field(default_factory=time.time)
 
     @property
@@ -168,7 +168,7 @@ class SentinelResult:
             f"{self.duration_ms:.0f}ms)"
         )
 
-    def failed_assertions(self) -> List[SentinelAssertionResult]:
+    def failed_assertions(self) -> list[SentinelAssertionResult]:
         """Get all failed assertions."""
         return [a for a in self.assertion_results if not a.passed]
 
@@ -203,8 +203,8 @@ class ScenarioRunner:
     def run(
         self,
         scenario: SentinelScenario,
-        agent_fn: Optional[Callable[..., Any]] = None,
-        env: Optional[Environment] = None,
+        agent_fn: Callable[..., Any] | None = None,
+        env: Environment | None = None,
     ) -> SentinelResult:
         """Run a single test scenario.
 
@@ -263,7 +263,7 @@ class ScenarioRunner:
             )
 
         # Run assertions
-        assertion_results: List[SentinelAssertionResult] = []
+        assertion_results: list[SentinelAssertionResult] = []
         all_passed = True
 
         for assertion in scenario.assertions:
@@ -300,16 +300,16 @@ class ScenarioRunner:
 
     def run_batch(
         self,
-        scenarios: List[SentinelScenario],
-        agent_fn: Optional[Callable[..., Any]] = None,
-    ) -> List[SentinelResult]:
+        scenarios: list[SentinelScenario],
+        agent_fn: Callable[..., Any] | None = None,
+    ) -> list[SentinelResult]:
         """Run multiple scenarios sequentially.
 
         Returns a list of SentinelResults in the same order as the input.
         """
         return [self.run(scenario, agent_fn=agent_fn) for scenario in scenarios]
 
-    def _build_env(self, config: Dict[str, Any]) -> Environment:
+    def _build_env(self, config: dict[str, Any]) -> Environment:
         """Build an Environment from a configuration dict.
 
         Config format:
@@ -345,11 +345,11 @@ class ScenarioRunner:
 
 
 def sentinel_test(
-    env: Optional[Union[Environment, EnvironmentBuilder]] = None,
+    env: Environment | EnvironmentBuilder | None = None,
     chaos: Any = None,
     task: str = "",
     timeout_seconds: int = 30,
-    tags: Optional[List[str]] = None,
+    tags: list[str] | None = None,
 ) -> Callable:
     """Pytest decorator for declarative sentinel test definition.
 

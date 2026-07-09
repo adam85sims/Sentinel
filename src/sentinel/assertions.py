@@ -10,9 +10,10 @@ descriptive message on failure.
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Dict, List, Optional
-from sentinel.models import AgentTrace, ToolCall
+from collections.abc import Callable
+from typing import Any
 
+from sentinel.models import AgentTrace
 
 # ──────────────────────────────────────────────────────
 # Tool Call Assertions
@@ -84,7 +85,7 @@ def assert_tool_not_called(trace: AgentTrace, tool_name: str) -> None:
 
 def assert_tool_call_order(
     trace: AgentTrace,
-    expected_order: List[str],
+    expected_order: list[str],
 ) -> None:
     """Assert that tools were called in the expected order.
 
@@ -302,7 +303,7 @@ def assert_tool_called_at_most(
 
 def assert_tool_allowlist(
     trace: AgentTrace,
-    allowed_tools: List[str],
+    allowed_tools: list[str],
 ) -> None:
     """Assert that ONLY tools from the allowlist were called.
 
@@ -327,7 +328,7 @@ def assert_tool_allowlist(
 
 def assert_tool_denylist(
     trace: AgentTrace,
-    denied_tools: List[str],
+    denied_tools: list[str],
 ) -> None:
     """Assert that NONE of the denied tools were called.
 
@@ -412,7 +413,7 @@ def assert_approval_before_action(
 
 def assert_graceful_degradation(
     trace: AgentTrace,
-    on_error_tool: Optional[str] = None,
+    on_error_tool: str | None = None,
 ) -> None:
     """Assert that the agent handled errors gracefully.
 
@@ -467,7 +468,7 @@ def assert_graceful_degradation(
 
 def assert_no_silent_failure(
     trace: AgentTrace,
-    validator: Optional[Callable[[Any], bool]] = None,
+    validator: Callable[[Any], bool] | None = None,
 ) -> None:
     """Assert that the agent's output is not a silent failure.
 
@@ -505,9 +506,9 @@ def assert_no_silent_failure(
 
 def assert_latency(
     trace: AgentTrace,
-    max_ms: Optional[float] = None,
-    min_ms: Optional[float] = None,
-    per_step_max_ms: Optional[float] = None,
+    max_ms: float | None = None,
+    min_ms: float | None = None,
+    per_step_max_ms: float | None = None,
 ) -> None:
     """Assert that the agent's execution latency is within bounds.
 
@@ -558,8 +559,8 @@ def assert_latency(
 
 def assert_token_usage(
     trace: AgentTrace,
-    max_tokens: Optional[int] = None,
-    min_tokens: Optional[int] = None,
+    max_tokens: int | None = None,
+    min_tokens: int | None = None,
 ) -> None:
     """Assert that token usage is within expected bounds.
 
@@ -600,9 +601,9 @@ def assert_token_usage(
 
 def assert_step_count(
     trace: AgentTrace,
-    max_steps: Optional[int] = None,
-    min_steps: Optional[int] = None,
-    exact_steps: Optional[int] = None,
+    max_steps: int | None = None,
+    min_steps: int | None = None,
+    exact_steps: int | None = None,
 ) -> None:
     """Assert that the agent used an expected number of steps.
 
@@ -641,8 +642,8 @@ def assert_step_count(
 def assert_tool_latency(
     trace: AgentTrace,
     tool_name: str,
-    max_ms: Optional[float] = None,
-    avg_max_ms: Optional[float] = None,
+    max_ms: float | None = None,
+    avg_max_ms: float | None = None,
 ) -> None:
     """Assert latency bounds on a specific tool's calls.
 
@@ -725,7 +726,7 @@ def assert_state_not_stale(
 
 
 def assert_state_consistent_across_traces(
-    traces: List[AgentTrace],
+    traces: list[AgentTrace],
     key: str,
 ) -> None:
     """Assert that a state key has the same value across multiple traces.
@@ -747,7 +748,7 @@ def assert_state_consistent_across_traces(
             "Need at least 2 traces to compare state consistency."
         )
 
-    final_values: List[Any] = []
+    final_values: list[Any] = []
     for i, trace in enumerate(traces):
         changes = [sc for sc in trace.state_changes if sc.key == key]
         if changes:
@@ -774,8 +775,8 @@ def assert_state_consistent_across_traces(
 
 
 def detect_state_collisions(
-    traces: List[AgentTrace],
-) -> List[Dict[str, Any]]:
+    traces: list[AgentTrace],
+) -> list[dict[str, Any]]:
     """Detect when multiple agents write to the same state key.
 
     Returns a list of collision events — moments where two or more
@@ -791,7 +792,7 @@ def detect_state_collisions(
         (trace_index, state_change) tuples), 'time_span_seconds'
     """
     # Group all state changes by key
-    changes_by_key: Dict[str, List[tuple]] = {}
+    changes_by_key: dict[str, list[tuple]] = {}
     for i, trace in enumerate(traces):
         for sc in trace.state_changes:
             changes_by_key.setdefault(sc.key, []).append((i, sc))
@@ -834,8 +835,8 @@ def detect_state_collisions(
 
 
 def assert_state_no_collisions(
-    traces: List[AgentTrace],
-    allowed_keys: Optional[List[str]] = None,
+    traces: list[AgentTrace],
+    allowed_keys: list[str] | None = None,
 ) -> None:
     """Assert that no state key collisions occurred between agents.
 

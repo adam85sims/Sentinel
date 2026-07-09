@@ -12,11 +12,10 @@ Each baseline is a directory containing:
 from __future__ import annotations
 
 import json
-import os
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from sentinel.models import (
     AgentTrace,
@@ -29,7 +28,6 @@ from sentinel.models import (
 )
 from sentinel.runner import SentinelAssertionResult, SentinelResult
 
-
 # Default baseline directory relative to project root
 _DEFAULT_BASELINE_DIR = ".sentinel/baselines"
 
@@ -38,7 +36,6 @@ __all__ = [
     "BaselineMetadata",
     "record_baseline",
     "load_baseline",
-    "compare_baselines",
 ]
 
 
@@ -50,12 +47,12 @@ class BaselineMetadata:
     timestamp: float = field(default_factory=time.time)
     git_sha: str = ""
     git_branch: str = ""
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     description: str = ""
     scenario_count: int = 0
     pass_count: int = 0
     fail_count: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # ──────────────────────────────────────────────────────
@@ -63,7 +60,7 @@ class BaselineMetadata:
 # ──────────────────────────────────────────────────────
 
 
-def _serialize_result(result: SentinelResult) -> Dict[str, Any]:
+def _serialize_result(result: SentinelResult) -> dict[str, Any]:
     """Serialize a SentinelResult to a JSON-compatible dict.
 
     Handles dataclass nested structures and enums.
@@ -88,7 +85,7 @@ def _serialize_result(result: SentinelResult) -> Dict[str, Any]:
     }
 
 
-def _serialize_trace(trace: AgentTrace) -> Dict[str, Any]:
+def _serialize_trace(trace: AgentTrace) -> dict[str, Any]:
     """Serialize an AgentTrace to a JSON-compatible dict."""
     return {
         "total_steps": trace.total_steps,
@@ -144,7 +141,7 @@ def _serialize_trace(trace: AgentTrace) -> Dict[str, Any]:
     }
 
 
-def _deserialize_trace(data: Dict[str, Any]) -> AgentTrace:
+def _deserialize_trace(data: dict[str, Any]) -> AgentTrace:
     """Deserialize a dict back into an AgentTrace."""
     trace = AgentTrace()
     trace.metadata = data.get("metadata", {})
@@ -202,7 +199,7 @@ def _deserialize_trace(data: Dict[str, Any]) -> AgentTrace:
     return trace
 
 
-def _deserialize_result(data: Dict[str, Any]) -> SentinelResult:
+def _deserialize_result(data: dict[str, Any]) -> SentinelResult:
     """Deserialize a dict back into a SentinelResult."""
     trace = _deserialize_trace(data.get("trace", {}))
     assertion_results = [
@@ -231,7 +228,7 @@ def _deserialize_result(data: Dict[str, Any]) -> SentinelResult:
 # ──────────────────────────────────────────────────────
 
 
-def get_baseline_dir(project_root: Optional[str] = None) -> Path:
+def get_baseline_dir(project_root: str | None = None) -> Path:
     """Get the baseline directory, creating it if needed."""
     if project_root is None:
         # Walk up from this file to find project root (sentinel/src → project)
@@ -242,14 +239,14 @@ def get_baseline_dir(project_root: Optional[str] = None) -> Path:
 
 
 def record_baseline(
-    results: List[SentinelResult],
+    results: list[SentinelResult],
     label: str,
-    tags: Optional[List[str]] = None,
+    tags: list[str] | None = None,
     description: str = "",
     git_sha: str = "",
     git_branch: str = "",
-    metadata: Optional[Dict[str, Any]] = None,
-    project_root: Optional[str] = None,
+    metadata: dict[str, Any] | None = None,
+    project_root: str | None = None,
 ) -> Path:
     """Record a set of results as a baseline.
 
@@ -301,8 +298,8 @@ def record_baseline(
 
 def load_baseline(
     label: str,
-    project_root: Optional[str] = None,
-) -> Tuple[BaselineMetadata, List[SentinelResult]]:
+    project_root: str | None = None,
+) -> tuple[BaselineMetadata, list[SentinelResult]]:
     """Load a previously recorded baseline.
 
     Args:
@@ -335,7 +332,7 @@ def load_baseline(
     return meta, results
 
 
-def list_baselines(project_root: Optional[str] = None) -> List[str]:
+def list_baselines(project_root: str | None = None) -> list[str]:
     """List all baseline labels, newest first."""
     baseline_dir = get_baseline_dir(project_root)
     if not baseline_dir.exists():
@@ -359,7 +356,7 @@ def list_baselines(project_root: Optional[str] = None) -> List[str]:
     return labels
 
 
-def delete_baseline(label: str, project_root: Optional[str] = None) -> bool:
+def delete_baseline(label: str, project_root: str | None = None) -> bool:
     """Delete a baseline by label.
 
     Returns True if deleted, False if not found.

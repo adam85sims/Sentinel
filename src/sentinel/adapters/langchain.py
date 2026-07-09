@@ -30,11 +30,10 @@ Usage:
 
 from __future__ import annotations
 
-import functools
 import time
-from typing import Any, Callable, Dict, List, Optional, Sequence, Type
+from typing import Any
 
-from sentinel.env import MockTool, MockToolCall
+from sentinel.env import MockTool
 from sentinel.models import AgentTrace, ToolCall
 
 try:
@@ -64,7 +63,7 @@ class SentinelToolAdapter:
         self,
         mock: MockTool,
         trace: AgentTrace,
-        base_tool: Optional[Any] = None,
+        base_tool: Any | None = None,
     ) -> None:
         # Validate langchain availability only when a real tool is provided
         if base_tool is not None and BaseTool is not None:
@@ -117,7 +116,7 @@ class SentinelToolAdapter:
         """Direct call interface — delegates to mock and records the call."""
         return self._call_mock(kwargs)
 
-    def _call_mock(self, kwargs: Dict[str, Any]) -> Any:
+    def _call_mock(self, kwargs: dict[str, Any]) -> Any:
         """Execute the mock tool and record the call into the trace."""
         start = time.time()
         result = None
@@ -157,7 +156,7 @@ class SentinelToolAdapter:
         return f"Sentinel mock tool: {self.name}"
 
     @property
-    def args(self) -> Dict[str, Any]:
+    def args(self) -> dict[str, Any]:
         """Tool argument schema — from the base tool or empty."""
         if self._base_tool is not None:
             return getattr(self._base_tool, "args", {})
@@ -174,9 +173,9 @@ class SentinelToolAdapter:
 
 def wrap_agent(
     agent: Any,
-    tool_map: Dict[str, MockTool],
+    tool_map: dict[str, MockTool],
     trace: AgentTrace,
-) -> "AgentWrapper":
+) -> AgentWrapper:
     """Wrap an entire LangChain agent, replacing its tools with mocks.
 
     Creates a wrapper around the agent that:
@@ -226,12 +225,12 @@ class AgentWrapper:
     def __init__(
         self,
         agent: Any,
-        tool_map: Dict[str, MockTool],
+        tool_map: dict[str, MockTool],
         trace: AgentTrace,
     ) -> None:
         self._agent = agent
         self._trace = trace
-        self._adapters: Dict[str, SentinelToolAdapter] = {}
+        self._adapters: dict[str, SentinelToolAdapter] = {}
 
         # Create an adapter for each mock tool
         for name, mock in tool_map.items():
@@ -241,7 +240,7 @@ class AgentWrapper:
             )
 
     @property
-    def adapters(self) -> Dict[str, SentinelToolAdapter]:
+    def adapters(self) -> dict[str, SentinelToolAdapter]:
         """Get all tool adapters by name."""
         return dict(self._adapters)
 
@@ -250,7 +249,7 @@ class AgentWrapper:
         """Access the AgentTrace."""
         return self._trace
 
-    def get_mock(self, name: str) -> Optional[MockTool]:
+    def get_mock(self, name: str) -> MockTool | None:
         """Get the mock tool for a given name."""
         adapter = self._adapters.get(name)
         return adapter.mock if adapter else None

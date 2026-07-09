@@ -28,13 +28,13 @@ Usage:
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import random
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
+from enum import StrEnum
+from typing import Any, Protocol, runtime_checkable
 
 from sentinel.env import (
     MockTool,
@@ -43,14 +43,13 @@ from sentinel.env import (
     RateLimitError,
     TimeoutError,
 )
-from sentinel.models import AgentTrace, Step, StateChange
 
 # ──────────────────────────────────────────────────────
 # Failure type enumerations
 # ──────────────────────────────────────────────────────
 
 
-class ToolFailureType(str, Enum):
+class ToolFailureType(StrEnum):
     """Types of failures that can be injected into tool calls."""
 
     TIMEOUT = "timeout"
@@ -60,7 +59,7 @@ class ToolFailureType(str, Enum):
     PARTIAL = "partial"
 
 
-class LLMFailureType(str, Enum):
+class LLMFailureType(StrEnum):
     """Types of failures that can be injected at the LLM/step level."""
 
     RATE_LIMIT = "rate_limit"
@@ -92,7 +91,7 @@ __all__ = [
 ]
 
 
-class DegradationStrategy(str, Enum):
+class DegradationStrategy(StrEnum):
     """Strategies for context degradation simulation."""
 
     # Truncate earlier context as steps accumulate (simulates window pressure)
@@ -103,7 +102,7 @@ class DegradationStrategy(str, Enum):
     DRIFT = "drift"
 
 
-class DriftIntensity(str, Enum):
+class DriftIntensity(StrEnum):
     """Intensity levels for SpecDrift injection."""
 
     SUBTLE = "subtle"  # Minor deviations, hard to detect
@@ -126,8 +125,8 @@ class InjectionRecord:
     injector_type: str  # "tool" or "llm"
     failure_type: str
     target: str  # tool name or step description
-    step_id: Optional[int] = None
-    call_index: Optional[int] = None
+    step_id: int | None = None
+    call_index: int | None = None
     timestamp: float = field(default_factory=time.time)
     message: str = ""
 
@@ -147,7 +146,7 @@ class FailureInjector(Protocol):
         ...
 
     @property
-    def records(self) -> List[InjectionRecord]:
+    def records(self) -> list[InjectionRecord]:
         """List of injection records for this injector."""
         ...
 
@@ -246,9 +245,9 @@ class ToolFailureInjector:
         tool_name: str,
         failure_type: str = "error",
         probability: float = 1.0,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         after_step: int = 0,
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
     ) -> None:
         self.tool_name = tool_name
         self.failure_type = ToolFailureType(failure_type)
@@ -259,7 +258,7 @@ class ToolFailureInjector:
 
         self._injection_count: int = 0
         self._call_count: int = 0
-        self._records: List[InjectionRecord] = []
+        self._records: list[InjectionRecord] = []
 
     @property
     def injection_count(self) -> int:
@@ -267,7 +266,7 @@ class ToolFailureInjector:
         return self._injection_count
 
     @property
-    def records(self) -> List[InjectionRecord]:
+    def records(self) -> list[InjectionRecord]:
         """List of injection records for this injector."""
         return list(self._records)
 
@@ -284,7 +283,7 @@ class ToolFailureInjector:
             return False
         return self._rng.random() < self.probability
 
-    def _create_failure(self, arguments: Dict[str, Any]) -> Exception:
+    def _create_failure(self, arguments: dict[str, Any]) -> Exception:
         """Create the appropriate exception for the configured failure type."""
         msg = self.error_message or self._default_message()
 
@@ -336,7 +335,6 @@ class ToolFailureInjector:
 
         def _injected_call(**kwargs: Any) -> Any:
             # Record the call on the underlying tool
-            from sentinel.env import MockToolCall
             import time as _time
             call = MockToolCall(tool_name=tool.name, arguments=kwargs)
             tool.calls.append(call)
@@ -382,7 +380,7 @@ class ToolFailureInjector:
     def inject(
         self,
         tool: MockTool,
-        arguments: Optional[Dict[str, Any]] = None,
+        arguments: dict[str, Any] | None = None,
     ) -> bool:
         """Manually trigger injection check on a tool call.
 
@@ -435,8 +433,8 @@ class LLMFailureInjector:
         failure_type: str = "rate_limit",
         after_step: int = 0,
         probability: float = 1.0,
-        seed: Optional[int] = None,
-        error_message: Optional[str] = None,
+        seed: int | None = None,
+        error_message: str | None = None,
     ) -> None:
         self.failure_type = LLMFailureType(failure_type)
         self.after_step = after_step
@@ -446,7 +444,7 @@ class LLMFailureInjector:
 
         self._injection_count: int = 0
         self._step_count: int = 0
-        self._records: List[InjectionRecord] = []
+        self._records: list[InjectionRecord] = []
 
     @property
     def injection_count(self) -> int:
@@ -454,7 +452,7 @@ class LLMFailureInjector:
         return self._injection_count
 
     @property
-    def records(self) -> List[InjectionRecord]:
+    def records(self) -> list[InjectionRecord]:
         """List of injection records for this injector."""
         return list(self._records)
 
@@ -471,7 +469,7 @@ class LLMFailureInjector:
             return False
         return self._rng.random() < self.probability
 
-    def check_step(self, step_id: int) -> Optional[Dict[str, Any]]:
+    def check_step(self, step_id: int) -> dict[str, Any] | None:
         """Check whether a step should be injected with a failure.
 
         Returns a failure dict if injection should occur, None otherwise.
@@ -499,7 +497,7 @@ class LLMFailureInjector:
             "injector": "llm",
         }
 
-    def get_error(self, step_id: int) -> Optional[Exception]:
+    def get_error(self, step_id: int) -> Exception | None:
         """Get the appropriate exception for an LLM failure at the given step.
 
         Returns the exception if injection should occur, None otherwise.
@@ -571,7 +569,7 @@ class ContextDegradation:
         strategy: str = "truncation",
         start_step: int = 1,
         degradation_rate: float = 0.1,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         max_truncation_pct: float = 0.5,
     ) -> None:
         self.strategy = DegradationStrategy(strategy)
@@ -582,7 +580,7 @@ class ContextDegradation:
 
         self._step_count: int = 0
         self._injection_count: int = 0
-        self._records: List[InjectionRecord] = []
+        self._records: list[InjectionRecord] = []
         # Drift offsets accumulate over time — the longer the run, the more
         # the instructions diverge from the original spec.
         self._drift_accumulator: float = 0.0
@@ -592,7 +590,7 @@ class ContextDegradation:
         return self._injection_count
 
     @property
-    def records(self) -> List[InjectionRecord]:
+    def records(self) -> list[InjectionRecord]:
         return list(self._records)
 
     @property
@@ -619,9 +617,9 @@ class ContextDegradation:
     def on_step(
         self,
         step_id: int,
-        context: Optional[List[Dict[str, Any]]] = None,
-        system_prompt: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        context: list[dict[str, Any]] | None = None,
+        system_prompt: str | None = None,
+    ) -> dict[str, Any]:
         """Process a step and return degraded context/prompt.
 
         Args:
@@ -641,7 +639,7 @@ class ContextDegradation:
         level = self.current_degradation_level
         injected = level > 0.0
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "context": context,
             "system_prompt": system_prompt,
             "degradation_level": level,
@@ -670,8 +668,8 @@ class ContextDegradation:
         return result
 
     def _apply_truncation(
-        self, context: List[Dict[str, Any]], level: float
-    ) -> List[Dict[str, Any]]:
+        self, context: list[dict[str, Any]], level: float
+    ) -> list[dict[str, Any]]:
         """Remove earlier context entries proportional to degradation level.
 
         At level 0.0, nothing is removed. At level 1.0, up to
@@ -695,8 +693,8 @@ class ContextDegradation:
         return context[:start_idx] + context[start_idx + drop_count:]
 
     def _apply_noise(
-        self, context: List[Dict[str, Any]], level: float
-    ) -> List[Dict[str, Any]]:
+        self, context: list[dict[str, Any]], level: float
+    ) -> list[dict[str, Any]]:
         """Inject random character substitutions into context content.
 
         Noise rate scales with degradation level. At level 0.1, roughly
@@ -757,8 +755,8 @@ class ContextDegradation:
 
     def make_validator(
         self,
-        original_context: Optional[List[Dict[str, Any]]] = None,
-        original_prompt: Optional[str] = None,
+        original_context: list[dict[str, Any]] | None = None,
+        original_prompt: str | None = None,
     ) -> Callable[[Any], bool]:
         """Create a validator function for use with assert_no_silent_failure.
 
@@ -817,7 +815,7 @@ class CascadingFailures:
         cascade_probability: float = 0.5,
         max_cascade_depth: int = 3,
         propagation_delay_steps: int = 1,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ) -> None:
         self.cascade_probability = max(0.0, min(1.0, cascade_probability))
         self.max_cascade_depth = max_cascade_depth
@@ -825,16 +823,16 @@ class CascadingFailures:
         self._rng = random.Random(seed)
 
         self._injection_count: int = 0
-        self._records: List[InjectionRecord] = []
+        self._records: list[InjectionRecord] = []
         # Active cascade chains: root_failure_id -> current depth
-        self._active_chains: Dict[str, int] = {}
+        self._active_chains: dict[str, int] = {}
 
     @property
     def injection_count(self) -> int:
         return self._injection_count
 
     @property
-    def records(self) -> List[InjectionRecord]:
+    def records(self) -> list[InjectionRecord]:
         return list(self._records)
 
     def reset(self) -> None:
@@ -844,9 +842,9 @@ class CascadingFailures:
 
     def on_failure(
         self,
-        failure_event: Dict[str, Any],
+        failure_event: dict[str, Any],
         current_step: int = 0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Process a failure event and return any cascading failures.
 
         Args:
@@ -868,7 +866,7 @@ class CascadingFailures:
         if current_depth >= self.max_cascade_depth:
             return []
 
-        cascades: List[Dict[str, Any]] = []
+        cascades: list[dict[str, Any]] = []
         # First failure always triggers (depth 0 = root)
         # Subsequent failures depend on cascade_probability
         if current_depth > 0 and self._rng.random() > self.cascade_probability:
@@ -913,12 +911,12 @@ class CascadingFailures:
 
         return cascades
 
-    def _chain_id(self, event: Dict[str, Any]) -> str:
+    def _chain_id(self, event: dict[str, Any]) -> str:
         """Generate a deterministic chain ID for a failure event."""
         key = f"{event.get('tool_name', '')}:{event.get('error_type', '')}"
         return hashlib.md5(key.encode()).hexdigest()[:12]
 
-    def _derive_cascading_target(self, event: Dict[str, Any]) -> str:
+    def _derive_cascading_target(self, event: dict[str, Any]) -> str:
         """Derive the tool/agent that fails next in the cascade.
 
         Uses a simple name-based heuristic: downstream dependencies
@@ -939,7 +937,7 @@ class CascadingFailures:
         # Default: same tool fails again (retry storm)
         return original
 
-    def _derive_cascading_error(self, event: Dict[str, Any]) -> str:
+    def _derive_cascading_error(self, event: dict[str, Any]) -> str:
         """Derive the error type for the cascading failure.
 
         Cascading failures often manifest differently from root causes.
@@ -955,11 +953,11 @@ class CascadingFailures:
         }
         return cascade_errors.get(error_type, "error")
 
-    def get_active_chains(self) -> Dict[str, int]:
+    def get_active_chains(self) -> dict[str, int]:
         """Get current cascade chain states."""
         return dict(self._active_chains)
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Get a summary of cascade state."""
         return {
             "total_cascades": self._injection_count,
@@ -1019,8 +1017,8 @@ class SpecDrift:
         intensity: str = "subtle",
         start_step: int = 5,
         probability: float = 0.1,
-        seed: Optional[int] = None,
-        trigger_events: Optional[List[str]] = None,
+        seed: int | None = None,
+        trigger_events: list[str] | None = None,
     ) -> None:
         self.intensity = DriftIntensity(intensity)
         self.start_step = start_step
@@ -1030,18 +1028,18 @@ class SpecDrift:
 
         self._step_count: int = 0
         self._injection_count: int = 0
-        self._records: List[InjectionRecord] = []
+        self._records: list[InjectionRecord] = []
         # Cumulative drift score — increases with each injection
         self._cumulative_drift: float = 0.0
         # History of drift events for assertion
-        self._drift_events: List[Dict[str, Any]] = []
+        self._drift_events: list[dict[str, Any]] = []
 
     @property
     def injection_count(self) -> int:
         return self._injection_count
 
     @property
-    def records(self) -> List[InjectionRecord]:
+    def records(self) -> list[InjectionRecord]:
         return list(self._records)
 
     @property
@@ -1050,7 +1048,7 @@ class SpecDrift:
         return min(1.0, self._cumulative_drift)
 
     @property
-    def drift_events(self) -> List[Dict[str, Any]]:
+    def drift_events(self) -> list[dict[str, Any]]:
         """History of all drift injection events."""
         return list(self._drift_events)
 
@@ -1064,8 +1062,8 @@ class SpecDrift:
     def check_step(
         self,
         step_id: int,
-        recent_errors: Optional[List[str]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        recent_errors: list[str] | None = None,
+    ) -> dict[str, Any] | None:
         """Check whether drift should be injected at this step.
 
         Args:
@@ -1167,7 +1165,7 @@ class SpecDrift:
         }
         return descriptions.get(drift_type, f"Unknown drift (magnitude {magnitude:.2f})")
 
-    def get_drift_score(self) -> Dict[str, Any]:
+    def get_drift_score(self) -> dict[str, Any]:
         """Get a comprehensive drift assessment."""
         return {
             "cumulative_drift": self.cumulative_drift,
@@ -1231,7 +1229,7 @@ class ChaosBudget:
 
     def __init__(self, max_failures: int = 5) -> None:
         self.max_failures = max_failures
-        self._injectors: List[FailureInjector] = []
+        self._injectors: list[FailureInjector] = []
         self._total_injected: int = 0
 
     @property
@@ -1254,7 +1252,7 @@ class ChaosBudget:
         return self.total_injected >= self.max_failures
 
     @property
-    def records(self) -> List[InjectionRecord]:
+    def records(self) -> list[InjectionRecord]:
         """All injection records across all injectors."""
         all_records = []
         for inj in self._injectors:
@@ -1262,17 +1260,17 @@ class ChaosBudget:
         return sorted(all_records, key=lambda r: r.timestamp)
 
     @property
-    def records_by_type(self) -> Dict[str, List[InjectionRecord]]:
+    def records_by_type(self) -> dict[str, list[InjectionRecord]]:
         """Injection records grouped by injector type."""
-        result: Dict[str, List[InjectionRecord]] = {}
+        result: dict[str, list[InjectionRecord]] = {}
         for record in self.records:
             result.setdefault(record.injector_type, []).append(record)
         return result
 
     @property
-    def records_by_failure(self) -> Dict[str, List[InjectionRecord]]:
+    def records_by_failure(self) -> dict[str, list[InjectionRecord]]:
         """Injection records grouped by failure type."""
-        result: Dict[str, List[InjectionRecord]] = {}
+        result: dict[str, list[InjectionRecord]] = {}
         for record in self.records:
             result.setdefault(record.failure_type, []).append(record)
         return result
@@ -1285,7 +1283,7 @@ class ChaosBudget:
         self._injectors.append(injector)
         return self
 
-    def get_injectors(self) -> List[FailureInjector]:
+    def get_injectors(self) -> list[FailureInjector]:
         """Get all registered injectors."""
         return list(self._injectors)
 
@@ -1313,7 +1311,7 @@ class ChaosBudget:
             inj.reset()
         self._total_injected = 0
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Get a summary of the chaos budget state."""
         return {
             "max_failures": self.max_failures,
@@ -1371,10 +1369,10 @@ class NetworkPartition:
 
     def __init__(
         self,
-        connectivity: Dict[str, List[str]],
+        connectivity: dict[str, list[str]],
         partition_probability: float = 1.0,
-        seed: Optional[int] = None,
-        heal_after_calls: Optional[int] = None,
+        seed: int | None = None,
+        heal_after_calls: int | None = None,
     ) -> None:
         self.connectivity = connectivity
         self.partition_probability = partition_probability
@@ -1384,7 +1382,7 @@ class NetworkPartition:
         self._call_count: int = 0
         self._injection_count: int = 0
         self._partition_active: bool = True
-        self._records: List[InjectionRecord] = []
+        self._records: list[InjectionRecord] = []
 
     @property
     def injection_count(self) -> int:
@@ -1397,7 +1395,7 @@ class NetworkPartition:
         reachable = self.connectivity.get(source, [])
         return target in reachable
 
-    def wrap(self, tool: "MockTool") -> "ChaosToolWrapper":
+    def wrap(self, tool: MockTool) -> ChaosToolWrapper:
         """Wrap a MockTool with network partition simulation."""
         return ChaosToolWrapper(tool=tool, injector=self)
 
@@ -1419,7 +1417,7 @@ class NetworkPartition:
             self._injection_count += 1
         return should
 
-    def _create_failure(self, kwargs: Dict[str, Any]) -> TimeoutError:
+    def _create_failure(self, kwargs: dict[str, Any]) -> TimeoutError:
         """Create a network partition failure."""
         source = kwargs.get("_source", "unknown")
         target = kwargs.get("_target", "unknown")
@@ -1477,8 +1475,8 @@ class ClockSkew:
         self,
         skew_seconds: float = 0.0,
         drift_rate: float = 0.0,
-        affected_tools: Optional[List[str]] = None,
-        seed: Optional[int] = None,
+        affected_tools: list[str] | None = None,
+        seed: int | None = None,
     ) -> None:
         self.skew_seconds = skew_seconds
         self.drift_rate = drift_rate
@@ -1488,7 +1486,7 @@ class ClockSkew:
         self._call_count: int = 0
         self._injection_count: int = 0
         self._current_skew: float = skew_seconds
-        self._records: List[InjectionRecord] = []
+        self._records: list[InjectionRecord] = []
 
     @property
     def injection_count(self) -> int:
@@ -1507,7 +1505,7 @@ class ClockSkew:
             return now
         return now + self._current_skew
 
-    def wrap(self, tool: "MockTool") -> "ChaosToolWrapper":
+    def wrap(self, tool: MockTool) -> ChaosToolWrapper:
         """Wrap a MockTool with clock skew simulation."""
         return ChaosToolWrapper(tool=tool, injector=self)
 
@@ -1519,7 +1517,7 @@ class ClockSkew:
         self._injection_count += 1
         return True
 
-    def _create_failure(self, kwargs: Dict[str, Any]) -> Exception:
+    def _create_failure(self, kwargs: dict[str, Any]) -> Exception:
         """Create a clock skew failure (usually a validation error)."""
         return MockToolError(
             f"Clock skew detected: timestamp mismatch "
@@ -1585,7 +1583,7 @@ class MemoryPressure:
         eviction_strategy: str = "fifo",
         gc_pause_ms: float = 0.0,
         oom_probability: float = 0.0,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ) -> None:
         self.max_context_tokens = max_context_tokens
         self.pressure_threshold = pressure_threshold
@@ -1599,7 +1597,7 @@ class MemoryPressure:
         self._injection_count: int = 0
         self._oom_count: int = 0
         self._eviction_count: int = 0
-        self._records: List[InjectionRecord] = []
+        self._records: list[InjectionRecord] = []
 
     @property
     def injection_count(self) -> int:
@@ -1620,7 +1618,7 @@ class MemoryPressure:
         """Whether context is above pressure threshold."""
         return self.usage_percentage >= self.pressure_threshold
 
-    def simulate_token_usage(self, tokens: int) -> Optional[str]:
+    def simulate_token_usage(self, tokens: int) -> str | None:
         """Simulate adding tokens to context.
 
         Returns:
@@ -1683,7 +1681,7 @@ class MemoryPressure:
         self._current_usage = max(0, self._current_usage - evicted)
         return evicted
 
-    def wrap(self, tool: "MockTool") -> "ChaosToolWrapper":
+    def wrap(self, tool: MockTool) -> ChaosToolWrapper:
         """Wrap a MockTool with memory pressure simulation."""
         return ChaosToolWrapper(tool=tool, injector=self)
 
@@ -1691,11 +1689,11 @@ class MemoryPressure:
         """Memory pressure is always active (it's cumulative)."""
         return True
 
-    def _create_failure(self, kwargs: Dict[str, Any]) -> Exception:
+    def _create_failure(self, kwargs: dict[str, Any]) -> Exception:
         """Create a memory pressure failure."""
         if self._rng.random() < self.oom_probability:
             return MockToolError(
-                f"OOM kill: context window overflow",
+                "OOM kill: context window overflow",
                 status_code=500,
             )
         return MockToolError(

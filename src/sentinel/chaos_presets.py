@@ -12,13 +12,13 @@
 #       injector.wrap(tool_mock)
 
 from sentinel.chaos import (
-    ToolFailureInjector,
-    ContextDegradation,
     CascadingFailures,
-    NetworkPartition,
     ClockSkew,
-    MemoryPressure,
+    ContextDegradation,
     DegradationStrategy,
+    MemoryPressure,
+    NetworkPartition,
+    ToolFailureInjector,
 )
 
 # ──────────────────────────────────────────────────────

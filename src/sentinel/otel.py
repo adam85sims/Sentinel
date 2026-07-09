@@ -13,11 +13,10 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import uuid4
 
-from sentinel.models import AgentTrace, Step, StepAction, ToolCall
-
+from sentinel.models import AgentTrace
 
 # ──────────────────────────────────────────────────────
 # Span data model (lightweight, no OTel SDK dependency)
@@ -38,7 +37,7 @@ class SpanEvent:
 
     name: str
     timestamp_ns: int  # nanoseconds since epoch
-    attributes: List[SpanAttribute] = field(default_factory=list)
+    attributes: list[SpanAttribute] = field(default_factory=list)
 
 
 @dataclass
@@ -52,16 +51,16 @@ class OTelSpan:
 
     trace_id: str
     span_id: str
-    parent_span_id: Optional[str]
+    parent_span_id: str | None
     name: str
     kind: str  # "internal", "client", "server", "producer", "consumer"
     start_time_ns: int
     end_time_ns: int
     status: str  # "OK", "ERROR", "UNSET"
-    attributes: List[SpanAttribute] = field(default_factory=list)
-    events: List[SpanEvent] = field(default_factory=list)
+    attributes: list[SpanAttribute] = field(default_factory=list)
+    events: list[SpanEvent] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dict for JSON export."""
         return {
             "trace_id": self.trace_id,
@@ -102,9 +101,9 @@ def _short_id() -> str:
 
 def trace_to_spans(
     trace: AgentTrace,
-    trace_id: Optional[str] = None,
+    trace_id: str | None = None,
     service_name: str = "sentinel-agent",
-) -> List[OTelSpan]:
+) -> list[OTelSpan]:
     """Convert an AgentTrace into a list of OTel-compatible spans.
 
     The resulting span hierarchy:
@@ -122,7 +121,7 @@ def trace_to_spans(
         List of OTelSpan objects ready for export.
     """
     trace_id = trace_id or _short_id()
-    spans: List[OTelSpan] = []
+    spans: list[OTelSpan] = []
 
     # Root span: the entire agent run
     root_span_id = _short_id()
@@ -179,7 +178,7 @@ def trace_to_spans(
         if step.duration_ms:
             step_attrs.append(SpanAttribute("sentinel.step.duration_ms", step.duration_ms))
 
-        step_events: List[SpanEvent] = []
+        step_events: list[SpanEvent] = []
         if step.error:
             step_events.append(
                 SpanEvent(
@@ -224,7 +223,7 @@ def trace_to_spans(
 
             tc_status = "ERROR" if not tc.succeeded else "OK"
 
-            tc_events: List[SpanEvent] = []
+            tc_events: list[SpanEvent] = []
             if tc.error:
                 tc_events.append(
                     SpanEvent(
@@ -273,7 +272,7 @@ def trace_to_spans(
 def export_to_otel(
     trace: AgentTrace,
     service_name: str = "sentinel-agent",
-    endpoint: Optional[str] = None,
+    endpoint: str | None = None,
 ) -> bool:
     """Export an AgentTrace to an OTLP collector using the real OTel SDK.
 

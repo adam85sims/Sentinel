@@ -41,11 +41,10 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from sentinel.env import MockTool
 from sentinel.models import AgentTrace, ToolCall
-
 
 # ──────────────────────────────────────────────────────
 # SentinelFunctionTool — wraps MockTool as an OpenAI function tool
@@ -81,9 +80,9 @@ class SentinelFunctionTool:
         self,
         mock: MockTool,
         trace: AgentTrace,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        params_json_schema: Optional[Dict[str, Any]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        params_json_schema: dict[str, Any] | None = None,
     ) -> None:
         self._mock = mock
         self._trace = trace
@@ -106,7 +105,7 @@ class SentinelFunctionTool:
         return self._trace
 
     @property
-    def params_json_schema(self) -> Dict[str, Any]:
+    def params_json_schema(self) -> dict[str, Any]:
         """JSON schema for the tool's input parameters.
 
         Matches the OpenAI SDK's FunctionTool.params_json_schema interface.
@@ -148,7 +147,7 @@ class SentinelFunctionTool:
         """
         return self.invoke(args)
 
-    def _call_mock(self, kwargs: Dict[str, Any]) -> Any:
+    def _call_mock(self, kwargs: dict[str, Any]) -> Any:
         """Execute the mock tool and record the call into the trace."""
         start = time.time()
         result = None
@@ -208,12 +207,12 @@ class OpenAIAgentWrapper:
     def __init__(
         self,
         agent: Any,
-        tool_map: Dict[str, MockTool],
+        tool_map: dict[str, MockTool],
         trace: AgentTrace,
     ) -> None:
         self._agent = agent
         self._trace = trace
-        self._adapters: Dict[str, SentinelFunctionTool] = {}
+        self._adapters: dict[str, SentinelFunctionTool] = {}
 
         # Create an adapter for each mock tool
         for tool_name, mock in tool_map.items():
@@ -224,7 +223,7 @@ class OpenAIAgentWrapper:
             )
 
     @property
-    def adapters(self) -> Dict[str, SentinelFunctionTool]:
+    def adapters(self) -> dict[str, SentinelFunctionTool]:
         """Get all tool adapters by name."""
         return dict(self._adapters)
 
@@ -233,16 +232,16 @@ class OpenAIAgentWrapper:
         """Access the AgentTrace."""
         return self._trace
 
-    def get_mock(self, name: str) -> Optional[MockTool]:
+    def get_mock(self, name: str) -> MockTool | None:
         """Get the mock tool for a given name."""
         adapter = self._adapters.get(name)
         return adapter.mock if adapter else None
 
-    def get_adapter(self, name: str) -> Optional[SentinelFunctionTool]:
+    def get_adapter(self, name: str) -> SentinelFunctionTool | None:
         """Get the adapter tool for a given name."""
         return self._adapters.get(name)
 
-    def get_tool_list(self) -> List[SentinelFunctionTool]:
+    def get_tool_list(self) -> list[SentinelFunctionTool]:
         """Get all adapters as a list (for passing to Agent.tools)."""
         return list(self._adapters.values())
 
@@ -255,7 +254,7 @@ class OpenAIAgentWrapper:
 
 def wrap_openai_agent(
     agent: Any,
-    tool_map: Dict[str, MockTool],
+    tool_map: dict[str, MockTool],
     trace: AgentTrace,
 ) -> OpenAIAgentWrapper:
     """Wrap an OpenAI Agents SDK Agent with sentinel tool mocking.

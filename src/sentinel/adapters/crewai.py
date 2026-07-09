@@ -35,7 +35,7 @@ Usage:
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any
 
 from sentinel.env import MockTool
 from sentinel.models import AgentTrace, ToolCall
@@ -79,8 +79,8 @@ class SentinelCrewTool:
         self,
         mock: MockTool,
         trace: AgentTrace,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ) -> None:
         self._mock = mock
         self._trace = trace
@@ -164,12 +164,12 @@ class CrewAgentWrapper:
     def __init__(
         self,
         crew: Any,
-        tool_map: Dict[str, MockTool],
+        tool_map: dict[str, MockTool],
         trace: AgentTrace,
     ) -> None:
         self._crew = crew
         self._trace = trace
-        self._adapters: Dict[str, SentinelCrewTool] = {}
+        self._adapters: dict[str, SentinelCrewTool] = {}
 
         # Create an adapter for each mock tool
         for tool_name, mock in tool_map.items():
@@ -180,7 +180,7 @@ class CrewAgentWrapper:
             )
 
     @property
-    def adapters(self) -> Dict[str, SentinelCrewTool]:
+    def adapters(self) -> dict[str, SentinelCrewTool]:
         """Get all tool adapters by name."""
         return dict(self._adapters)
 
@@ -189,16 +189,16 @@ class CrewAgentWrapper:
         """Access the AgentTrace."""
         return self._trace
 
-    def get_mock(self, name: str) -> Optional[MockTool]:
+    def get_mock(self, name: str) -> MockTool | None:
         """Get the mock tool for a given name."""
         adapter = self._adapters.get(name)
         return adapter.mock if adapter else None
 
-    def get_adapter(self, name: str) -> Optional[SentinelCrewTool]:
+    def get_adapter(self, name: str) -> SentinelCrewTool | None:
         """Get the adapter tool for a given name."""
         return self._adapters.get(name)
 
-    def get_tool_list(self) -> List[SentinelCrewTool]:
+    def get_tool_list(self) -> list[SentinelCrewTool]:
         """Get all adapters as a list (for passing to CrewAI Agent.tools)."""
         return list(self._adapters.values())
 
@@ -211,7 +211,7 @@ class CrewAgentWrapper:
 
 def wrap_crew_agent(
     crew: Any,
-    tool_map: Dict[str, MockTool],
+    tool_map: dict[str, MockTool],
     trace: AgentTrace,
 ) -> CrewAgentWrapper:
     """Wrap a CrewAI Crew with sentinel tool mocking.

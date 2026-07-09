@@ -40,18 +40,17 @@ Usage:
 
 from __future__ import annotations
 
-import functools
 import time
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from sentinel.env import MockTool
 from sentinel.models import AgentTrace, ToolCall
 
-
 # Type aliases for hook callables
-BeforeHook = Callable[[Dict[str, Any]], Dict[str, Any]]
-AfterHook = Callable[[Any, Dict[str, Any]], Any]
-ErrorHook = Callable[[Exception, Dict[str, Any]], None]
+BeforeHook = Callable[[dict[str, Any]], dict[str, Any]]
+AfterHook = Callable[[Any, dict[str, Any]], Any]
+ErrorHook = Callable[[Exception, dict[str, Any]], None]
 
 
 # ──────────────────────────────────────────────────────
@@ -87,10 +86,10 @@ class HookAdapter:
     def __init__(
         self,
         trace: AgentTrace,
-        mock: Optional[MockTool] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        fn: Optional[Callable[..., Any]] = None,
+        mock: MockTool | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        fn: Callable[..., Any] | None = None,
     ) -> None:
         if mock is None and fn is None:
             raise ValueError("Either mock or fn must be provided")
@@ -105,12 +104,12 @@ class HookAdapter:
         )
 
         # Hook chains — registered in order, executed in order
-        self._before_hooks: List[BeforeHook] = []
-        self._after_hooks: List[AfterHook] = []
-        self._error_hooks: List[ErrorHook] = []
+        self._before_hooks: list[BeforeHook] = []
+        self._after_hooks: list[AfterHook] = []
+        self._error_hooks: list[ErrorHook] = []
 
     @property
-    def mock(self) -> Optional[MockTool]:
+    def mock(self) -> MockTool | None:
         """Access the underlying sentinel MockTool (if any)."""
         return self._mock
 
@@ -254,8 +253,8 @@ class HookAdapter:
 def wrap_callable(
     mock: MockTool,
     trace: AgentTrace,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
+    name: str | None = None,
+    description: str | None = None,
 ) -> Callable[[Callable[..., Any]], HookAdapter]:
     """Decorator that wraps a function with a sentinel HookAdapter.
 
@@ -310,14 +309,14 @@ class HookAdapterGroup:
 
     def __init__(self, trace: AgentTrace) -> None:
         self._trace = trace
-        self._adapters: Dict[str, HookAdapter] = {}
+        self._adapters: dict[str, HookAdapter] = {}
 
     def add(
         self,
         mock: MockTool,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        fn: Optional[Callable[..., Any]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        fn: Callable[..., Any] | None = None,
     ) -> HookAdapter:
         """Add a tool to the group.
 
@@ -341,12 +340,12 @@ class HookAdapterGroup:
         self._adapters[tool_name] = adapter
         return adapter
 
-    def get(self, name: str) -> Optional[HookAdapter]:
+    def get(self, name: str) -> HookAdapter | None:
         """Get an adapter by name."""
         return self._adapters.get(name)
 
     @property
-    def adapters(self) -> Dict[str, HookAdapter]:
+    def adapters(self) -> dict[str, HookAdapter]:
         """All adapters in the group."""
         return dict(self._adapters)
 

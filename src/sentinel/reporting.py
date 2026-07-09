@@ -9,17 +9,15 @@ Provides:
 
 from __future__ import annotations
 
-import json
 import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from enum import StrEnum
+from typing import Any
 from xml.dom import minidom
 
-from sentinel.models import AgentTrace, ToolCall
-from sentinel.runner import SentinelAssertionResult, SentinelResult
-
+from sentinel.models import AgentTrace
+from sentinel.runner import SentinelResult
 
 # ──────────────────────────────────────────────────────
 # RegressionReport — baseline vs current (architecture §6.3)
@@ -33,7 +31,7 @@ __all__ = [
 ]
 
 
-class ResultDelta(str, Enum):
+class ResultDelta(StrEnum):
     """Classification of result changes between baseline and current."""
 
     NEW_PASS = "new_pass"        # scenario was failing, now passes
@@ -51,13 +49,13 @@ class ScenarioDelta:
     scenario_id: str
     scenario_name: str
     delta: ResultDelta
-    baseline_passed: Optional[bool] = None
-    current_passed: Optional[bool] = None
-    baseline_duration_ms: Optional[float] = None
-    current_duration_ms: Optional[float] = None
-    new_failures: List[str] = field(default_factory=list)
-    fixed_assertions: List[str] = field(default_factory=list)
-    trace_diff: Optional[Dict[str, Any]] = None
+    baseline_passed: bool | None = None
+    current_passed: bool | None = None
+    baseline_duration_ms: float | None = None
+    current_duration_ms: float | None = None
+    new_failures: list[str] = field(default_factory=list)
+    fixed_assertions: list[str] = field(default_factory=list)
+    trace_diff: dict[str, Any] | None = None
 
     @property
     def is_regression(self) -> bool:
@@ -86,10 +84,10 @@ class RegressionReport:
 
     baseline_label: str = ""
     current_label: str = ""
-    deltas: List[ScenarioDelta] = field(default_factory=list)
+    deltas: list[ScenarioDelta] = field(default_factory=list)
     baseline_timestamp: float = 0.0
     current_timestamp: float = field(default_factory=time.time)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # ── Aggregate properties ──
 
@@ -98,25 +96,25 @@ class RegressionReport:
         return len(self.deltas)
 
     @property
-    def regressions(self) -> List[ScenarioDelta]:
+    def regressions(self) -> list[ScenarioDelta]:
         """Scenarios that went from passing to failing."""
         return [d for d in self.deltas if d.is_regression]
 
     @property
-    def fixes(self) -> List[ScenarioDelta]:
+    def fixes(self) -> list[ScenarioDelta]:
         """Scenarios that went from failing to passing."""
         return [d for d in self.deltas if d.is_fix]
 
     @property
-    def still_passing(self) -> List[ScenarioDelta]:
+    def still_passing(self) -> list[ScenarioDelta]:
         return [d for d in self.deltas if d.delta == ResultDelta.STILL_PASS]
 
     @property
-    def still_failing(self) -> List[ScenarioDelta]:
+    def still_failing(self) -> list[ScenarioDelta]:
         return [d for d in self.deltas if d.delta == ResultDelta.STILL_FAIL]
 
     @property
-    def new_scenarios(self) -> List[ScenarioDelta]:
+    def new_scenarios(self) -> list[ScenarioDelta]:
         return [d for d in self.deltas if d.delta == ResultDelta.NEW_SCENARIO]
 
     @property
@@ -150,7 +148,7 @@ class RegressionReport:
         parts.append(f"{n_sp} still pass, {n_sf} still fail")
         return f"[{self.verdict}] " + ", ".join(parts)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dict for JSON output."""
         return {
             "baseline_label": self.baseline_label,
@@ -183,11 +181,11 @@ class RegressionReport:
 
 
 def build_regression_report(
-    baseline_results: List[SentinelResult],
-    current_results: List[SentinelResult],
+    baseline_results: list[SentinelResult],
+    current_results: list[SentinelResult],
     baseline_label: str = "baseline",
     current_label: str = "current",
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
 ) -> RegressionReport:
     """Build a RegressionReport by comparing baseline and current results.
 
@@ -196,11 +194,11 @@ def build_regression_report(
     - Scenarios only in current (new_scenario)
     - Scenarios only in baseline (removed)
     """
-    baseline_map: Dict[str, SentinelResult] = {r.scenario_id: r for r in baseline_results}
-    current_map: Dict[str, SentinelResult] = {r.scenario_id: r for r in current_results}
+    baseline_map: dict[str, SentinelResult] = {r.scenario_id: r for r in baseline_results}
+    current_map: dict[str, SentinelResult] = {r.scenario_id: r for r in current_results}
 
     all_ids = set(baseline_map.keys()) | set(current_map.keys())
-    deltas: List[ScenarioDelta] = []
+    deltas: list[ScenarioDelta] = []
 
     for sid in sorted(all_ids):
         b = baseline_map.get(sid)
@@ -280,7 +278,7 @@ def build_regression_report(
 def diff_traces(
     baseline: AgentTrace,
     current: AgentTrace,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compare two AgentTraces and return a structural diff.
 
     Returns a dict with:
@@ -446,7 +444,7 @@ def _esc(text: str) -> str:
 # ──────────────────────────────────────────────────────
 
 
-def generate_junit_xml(results: List[SentinelResult], suite_name: str = "sentinel") -> str:
+def generate_junit_xml(results: list[SentinelResult], suite_name: str = "sentinel") -> str:
     """Generate JUnit XML from a list of test results.
 
     Compatible with CI systems (GitHub Actions, GitLab CI, Jenkins, etc.).

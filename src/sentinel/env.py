@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 
 
 class MockToolError(Exception):
@@ -62,9 +63,9 @@ class MockToolCall:
     Stored for later assertion and analysis.
     """
     tool_name: str
-    arguments: Dict[str, Any]
+    arguments: dict[str, Any]
     result: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     duration_ms: float = 0.0
     timestamp: float = field(default_factory=time.time)
 
@@ -90,20 +91,20 @@ class MockTool:
     name: str
     # Response configuration (exactly one required)
     response: Any = None
-    response_fn: Optional[Callable[..., Any]] = None
-    side_effect: Optional[Exception] = None
+    response_fn: Callable[..., Any] | None = None
+    side_effect: Exception | None = None
     # Latency simulation
     latency_ms: float = 0.0
     # Error injection (probability-based)
     error_probability: float = 0.0
-    error_factory: Optional[Callable[[], Exception]] = None
+    error_factory: Callable[[], Exception] | None = None
     # Optional per-instance call handler — when set, __call__ delegates
     # to this callable instead of the normal response/side_effect logic.
     # Used by sentinel.chaos ToolFailureInjector.wrap() to intercept calls.
     # Signature: handler(**kwargs) -> Any (may raise exceptions).
-    call_handler: Optional[Callable[..., Any]] = field(default=None, repr=False)
+    call_handler: Callable[..., Any] | None = field(default=None, repr=False)
     # Call recording
-    calls: List[MockToolCall] = field(default_factory=list, repr=False)
+    calls: list[MockToolCall] = field(default_factory=list, repr=False)
 
     def __call__(self, **kwargs: Any) -> Any:
         """Execute the mock tool with the given arguments.
@@ -165,7 +166,7 @@ class MockTool:
         return len(self.calls)
 
     @property
-    def last_call(self) -> Optional[MockToolCall]:
+    def last_call(self) -> MockToolCall | None:
         return self.calls[-1] if self.calls else None
 
 
@@ -179,11 +180,11 @@ class APICallRecord:
     """Record of a single API call to a MockAPI."""
     method: str
     url: str
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
     body: Any = None
     response_status: int = 200
     response_body: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     duration_ms: float = 0.0
     timestamp: float = field(default_factory=time.time)
 
@@ -207,7 +208,7 @@ class RouteConfig:
     url_pattern: str = "*"
     status: int = 200
     response: Any = None
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
     latency_ms: float = 0.0
     error_probability: float = 0.0
     error_status: int = 500
@@ -261,12 +262,12 @@ class MockAPI:
         self.default_status = default_status
         self.default_response = default_response
 
-        self._routes: List[RouteConfig] = []
-        self._calls: List[APICallRecord] = []
-        self._call_timestamps: List[float] = []
-        self._graphql_handlers: Dict[str, Callable] = {}
+        self._routes: list[RouteConfig] = []
+        self._calls: list[APICallRecord] = []
+        self._call_timestamps: list[float] = []
+        self._graphql_handlers: dict[str, Callable] = {}
 
-    def add_route(self, route: RouteConfig) -> "MockAPI":
+    def add_route(self, route: RouteConfig) -> MockAPI:
         """Add a route configuration. Returns self for chaining."""
         self._routes.append(route)
         return self
@@ -274,8 +275,8 @@ class MockAPI:
     def graphql_handler(
         self,
         operation_name: str,
-        handler: Callable[[Dict[str, Any]], Any],
-    ) -> "MockAPI":
+        handler: Callable[[dict[str, Any]], Any],
+    ) -> MockAPI:
         """Register a handler for a specific GraphQL operation.
 
         Args:
@@ -290,7 +291,7 @@ class MockAPI:
         self,
         method: str,
         url: str,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         body: Any = None,
     ) -> Any:
         """Execute a mock API request.
@@ -390,8 +391,8 @@ class MockAPI:
     def graphql(
         self,
         query: str,
-        variables: Optional[Dict[str, Any]] = None,
-        operation_name: Optional[str] = None,
+        variables: dict[str, Any] | None = None,
+        operation_name: str | None = None,
     ) -> Any:
         """Execute a mock GraphQL query/mutation.
 
@@ -417,7 +418,7 @@ class MockAPI:
         handler = self._graphql_handlers[operation_name]
         return handler(variables or {})
 
-    def _match_route(self, method: str, url: str) -> Optional[RouteConfig]:
+    def _match_route(self, method: str, url: str) -> RouteConfig | None:
         """Find the first route matching the method and URL."""
         # Strip base URL if present
         if self.base_url and url.startswith(self.base_url):
@@ -459,11 +460,11 @@ class MockAPI:
         return len(self._calls)
 
     @property
-    def calls(self) -> List[APICallRecord]:
+    def calls(self) -> list[APICallRecord]:
         return list(self._calls)
 
     @property
-    def last_call(self) -> Optional[APICallRecord]:
+    def last_call(self) -> APICallRecord | None:
         return self._calls[-1] if self._calls else None
 
     def reset(self) -> None:
@@ -501,10 +502,10 @@ class QueryRecord:
     query_type: str  # "select", "insert", "update", "delete"
     table: str
     query: str = ""
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
     result: Any = None
     row_count: int = 0
-    error: Optional[str] = None
+    error: str | None = None
     duration_ms: float = 0.0
     timestamp: float = field(default_factory=time.time)
 
@@ -543,14 +544,14 @@ class MockDatabase:
         self.latency_ms = latency_ms
         self.error_probability = error_probability
 
-        self._tables: Dict[str, List[Dict[str, Any]]] = {}
-        self._schemas: Dict[str, Dict[str, str]] = {}
-        self._queries: List[QueryRecord] = []
+        self._tables: dict[str, list[dict[str, Any]]] = {}
+        self._schemas: dict[str, dict[str, str]] = {}
+        self._queries: list[QueryRecord] = []
 
     def create_table(
         self,
         name: str,
-        schema: Optional[Dict[str, str]] = None,
+        schema: dict[str, str] | None = None,
     ) -> None:
         """Create a table with an optional schema definition.
 
@@ -568,7 +569,7 @@ class MockDatabase:
         self._tables.pop(name, None)
         self._schemas.pop(name, None)
 
-    def insert(self, table: str, row: Dict[str, Any]) -> None:
+    def insert(self, table: str, row: dict[str, Any]) -> None:
         """Insert a row into a table.
 
         Args:
@@ -596,7 +597,7 @@ class MockDatabase:
         record.duration_ms = self.latency_ms
         self._queries.append(record)
 
-    def insert_many(self, table: str, rows: List[Dict[str, Any]]) -> int:
+    def insert_many(self, table: str, rows: list[dict[str, Any]]) -> int:
         """Insert multiple rows into a table.
 
         Returns the number of rows inserted.
@@ -608,10 +609,10 @@ class MockDatabase:
     def select(
         self,
         table: str,
-        where: Optional[Dict[str, Any]] = None,
-        columns: Optional[List[str]] = None,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        where: dict[str, Any] | None = None,
+        columns: list[str] | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """Select rows from a table with optional filtering.
 
         Args:
@@ -665,8 +666,8 @@ class MockDatabase:
     def update(
         self,
         table: str,
-        updates: Dict[str, Any],
-        where: Optional[Dict[str, Any]] = None,
+        updates: dict[str, Any],
+        where: dict[str, Any] | None = None,
     ) -> int:
         """Update rows in a table.
 
@@ -699,7 +700,7 @@ class MockDatabase:
     def delete(
         self,
         table: str,
-        where: Optional[Dict[str, Any]] = None,
+        where: dict[str, Any] | None = None,
     ) -> int:
         """Delete rows from a table.
 
@@ -733,16 +734,16 @@ class MockDatabase:
 
         return count
 
-    def count(self, table: str, where: Optional[Dict[str, Any]] = None) -> int:
+    def count(self, table: str, where: dict[str, Any] | None = None) -> int:
         """Count rows in a table with optional filtering."""
         results = self.select(table, where=where)
         return len(results)
 
-    def get_table(self, name: str) -> List[Dict[str, Any]]:
+    def get_table(self, name: str) -> list[dict[str, Any]]:
         """Get all rows in a table (for test setup/verification)."""
         return [dict(row) for row in self._tables.get(name, [])]
 
-    def get_tables(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_tables(self) -> dict[str, list[dict[str, Any]]]:
         """Get all tables and their rows."""
         return {name: [dict(row) for row in rows] for name, rows in self._tables.items()}
 
@@ -751,18 +752,18 @@ class MockDatabase:
         return len(self._queries)
 
     @property
-    def queries(self) -> List[QueryRecord]:
+    def queries(self) -> list[QueryRecord]:
         return list(self._queries)
 
     @property
-    def last_query(self) -> Optional[QueryRecord]:
+    def last_query(self) -> QueryRecord | None:
         return self._queries[-1] if self._queries else None
 
-    def queries_by_type(self, query_type: str) -> List[QueryRecord]:
+    def queries_by_type(self, query_type: str) -> list[QueryRecord]:
         """Get all queries of a specific type (select, insert, update, delete)."""
         return [q for q in self._queries if q.query_type == query_type]
 
-    def queries_on_table(self, table: str) -> List[QueryRecord]:
+    def queries_on_table(self, table: str) -> list[QueryRecord]:
         """Get all queries on a specific table."""
         return [q for q in self._queries if q.table == table]
 
@@ -869,20 +870,20 @@ class EnvironmentBuilder:
     """
 
     def __init__(self) -> None:
-        self._tools: Dict[str, MockTool] = {}
-        self._apis: Dict[str, MockAPI] = {}
-        self._databases: Dict[str, MockDatabase] = {}
-        self._rate_limit: Optional[Dict[str, Any]] = None
+        self._tools: dict[str, MockTool] = {}
+        self._apis: dict[str, MockAPI] = {}
+        self._databases: dict[str, MockDatabase] = {}
+        self._rate_limit: dict[str, Any] | None = None
 
     def mock_tool(
         self,
         name: str,
         response: Any = None,
-        response_fn: Optional[Callable] = None,
-        side_effect: Optional[Exception] = None,
+        response_fn: Callable | None = None,
+        side_effect: Exception | None = None,
         latency_ms: float = 0.0,
         error_probability: float = 0.0,
-    ) -> "EnvironmentBuilder":
+    ) -> EnvironmentBuilder:
         """Add a mock tool to the environment."""
         self._tools[name] = MockTool(
             name=name,
@@ -897,11 +898,11 @@ class EnvironmentBuilder:
     def mock_api(
         self,
         base_url: str = "",
-        name: Optional[str] = None,
+        name: str | None = None,
         rate_limit_per_minute: int = 0,
         default_status: int = 200,
         default_response: Any = None,
-    ) -> "EnvironmentBuilder":
+    ) -> EnvironmentBuilder:
         """Add a mock REST/GraphQL API to the environment.
 
         Args:
@@ -934,7 +935,7 @@ class EnvironmentBuilder:
         name: str = "database",
         latency_ms: float = 0.0,
         error_probability: float = 0.0,
-    ) -> "EnvironmentBuilder":
+    ) -> EnvironmentBuilder:
         """Add a mock database to the environment.
 
         Args:
@@ -957,12 +958,12 @@ class EnvironmentBuilder:
 
         return self
 
-    def with_rate_limit(self, calls_per_minute: int = 10) -> "EnvironmentBuilder":
+    def with_rate_limit(self, calls_per_minute: int = 10) -> EnvironmentBuilder:
         """Set a global rate limit for all tools."""
         self._rate_limit = {"calls_per_minute": calls_per_minute}
         return self
 
-    def build(self) -> "Environment":
+    def build(self) -> Environment:
         """Build the configured environment."""
         return Environment(
             tools=self._tools,
@@ -1002,37 +1003,37 @@ class Environment:
     Provides tools by name and tracks all calls made
     across the entire environment.
     """
-    tools: Dict[str, MockTool] = field(default_factory=dict)
-    apis: Dict[str, MockAPI] = field(default_factory=dict)
-    databases: Dict[str, MockDatabase] = field(default_factory=dict)
-    rate_limit: Optional[Dict[str, Any]] = None
+    tools: dict[str, MockTool] = field(default_factory=dict)
+    apis: dict[str, MockAPI] = field(default_factory=dict)
+    databases: dict[str, MockDatabase] = field(default_factory=dict)
+    rate_limit: dict[str, Any] | None = None
 
-    def get_tool(self, name: str) -> Optional[MockTool]:
+    def get_tool(self, name: str) -> MockTool | None:
         """Retrieve a mock tool by name."""
         return self.tools.get(name)
 
-    def get_tools(self) -> Dict[str, MockTool]:
+    def get_tools(self) -> dict[str, MockTool]:
         """Get all mock tools."""
         return self.tools
 
-    def get_api(self, name: str) -> Optional[MockAPI]:
+    def get_api(self, name: str) -> MockAPI | None:
         """Retrieve a mock API by name."""
         return self.apis.get(name)
 
-    def get_apis(self) -> Dict[str, MockAPI]:
+    def get_apis(self) -> dict[str, MockAPI]:
         """Get all mock APIs."""
         return self.apis
 
-    def get_database(self, name: str) -> Optional[MockDatabase]:
+    def get_database(self, name: str) -> MockDatabase | None:
         """Retrieve a mock database by name."""
         return self.databases.get(name)
 
-    def get_databases(self) -> Dict[str, MockDatabase]:
+    def get_databases(self) -> dict[str, MockDatabase]:
         """Get all mock databases."""
         return self.databases
 
     @property
-    def all_calls(self) -> List[MockToolCall]:
+    def all_calls(self) -> list[MockToolCall]:
         """Get all tool calls across all tools, in chronological order."""
         calls = []
         for tool in self.tools.values():

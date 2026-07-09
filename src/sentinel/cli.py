@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import importlib
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -603,7 +602,7 @@ def _discover_scenarios() -> list:
     Searches for pytest-compatible test functions with the _sentinel_test
     attribute set by the @sentinel_test decorator.
     """
-    from sentinel.runner import TestScenario, AgentConfig
+    from sentinel.runner import TestScenario
 
     scenarios = []
 

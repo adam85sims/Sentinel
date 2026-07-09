@@ -7,11 +7,11 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from enum import StrEnum
+from typing import Any
 
 
-class StepAction(str, Enum):
+class StepAction(StrEnum):
     """Types of actions an agent can take during execution."""
 
     PLAN = "plan"
@@ -21,7 +21,7 @@ class StepAction(str, Enum):
     ERROR = "error"
 
 
-class ErrorSeverity(str, Enum):
+class ErrorSeverity(StrEnum):
     """Severity of errors encountered during execution."""
 
     LOW = "low"
@@ -39,10 +39,10 @@ class ToolCall:
     """
 
     tool_name: str
-    arguments: Dict[str, Any]
+    arguments: dict[str, Any]
     result: Any = None
     duration_ms: float = 0.0
-    error: Optional[str] = None
+    error: str | None = None
     step_id: int = 0
     timestamp: float = field(default_factory=time.time)
 
@@ -101,8 +101,8 @@ class Step:
     input: Any = None
     output: Any = None
     duration_ms: float = 0.0
-    tool_calls: List[ToolCall] = field(default_factory=list)
-    error: Optional[Error] = None
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    error: Error | None = None
 
 
 @dataclass
@@ -114,15 +114,15 @@ class AgentTrace:
     and error information.
     """
 
-    steps: List[Step] = field(default_factory=list)
-    tool_calls: List[ToolCall] = field(default_factory=list)
-    state_changes: List[StateChange] = field(default_factory=list)
-    errors: List[Error] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    steps: list[Step] = field(default_factory=list)
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    state_changes: list[StateChange] = field(default_factory=list)
+    errors: list[Error] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Execution tracking
     _start_time: float = field(default_factory=time.time, repr=False)
-    _end_time: Optional[float] = field(default=None, repr=False)
+    _end_time: float | None = field(default=None, repr=False)
 
     def finish(self) -> None:
         """Mark the trace as complete."""
@@ -144,11 +144,11 @@ class AgentTrace:
         return len(self.tool_calls)
 
     @property
-    def failed_tool_calls(self) -> List[ToolCall]:
+    def failed_tool_calls(self) -> list[ToolCall]:
         return [tc for tc in self.tool_calls if not tc.succeeded]
 
     @property
-    def tool_names_called(self) -> List[str]:
+    def tool_names_called(self) -> list[str]:
         """Unique tool names in order of first call."""
         seen = set()
         result = []
@@ -158,7 +158,7 @@ class AgentTrace:
                 result.append(tc.tool_name)
         return result
 
-    def tool_calls_by_name(self, name: str) -> List[ToolCall]:
+    def tool_calls_by_name(self, name: str) -> list[ToolCall]:
         """Get all calls to a specific tool, in order."""
         return [tc for tc in self.tool_calls if tc.tool_name == name]
 
@@ -179,7 +179,7 @@ class AgentTrace:
     def add_error(self, error: Error) -> None:
         self.errors.append(error)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize trace to a dictionary for reporting."""
         return {
             "total_steps": self.total_steps,

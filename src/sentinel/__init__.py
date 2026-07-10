@@ -5,6 +5,8 @@ Tests what agents DO, not just what they SAY.
 __version__ = "0.2.0"
 
 from sentinel.assertions import (
+    assert_agent_recovers,
+    assert_chaos_resilience,
     assert_graceful_degradation,
     assert_latency,
     assert_no_silent_failure,
@@ -38,7 +40,9 @@ from sentinel.chaos import (
     DegradationStrategy,
     DriftIntensity,
     SpecDrift,
+    inject_failures,
 )
+from sentinel.chaos_presets import list_presets, load_preset, PRESETS
 from sentinel.env import (
     Environment,
     EnvironmentBuilder,
@@ -112,6 +116,8 @@ __all__ = [
     "assert_state_changed",
     "assert_graceful_degradation",
     "assert_no_silent_failure",
+    "assert_chaos_resilience",
+    "assert_agent_recovers",
     "assert_latency",
     "assert_token_usage",
     "assert_step_count",
@@ -128,6 +134,10 @@ __all__ = [
     "SpecDrift",
     "DegradationStrategy",
     "DriftIntensity",
+    # Chaos Presets
+    "PRESETS",
+    "load_preset",
+    "list_presets",
     # Reporting
     "RegressionReport",
     "ScenarioDelta",

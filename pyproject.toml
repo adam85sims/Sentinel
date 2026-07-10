@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 # Core: zero external dependencies. Sentinel works standalone.
-dependencies = []
+dependencies = ["click>=8.0"]
 
 [project.optional-dependencies]
 # Framework adapters — only install what you use

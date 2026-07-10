@@ -230,6 +230,9 @@ class ScenarioRunner:
         else:
             resolved_env = Environment()
 
+        # Wire trace to environment so tool calls are auto-recorded
+        resolved_env.set_trace(trace)
+
         # Resolve agent function
         if agent_fn is None and scenario.agent_config:
             agent_fn = scenario.agent_config.factory
@@ -400,6 +403,9 @@ def sentinel_test(
 
             # Create trace
             trace = AgentTrace()
+
+            # Wire trace to environment so tool calls are auto-recorded
+            resolved_env.set_trace(trace)
 
             # Inject trace and env into kwargs for the test function
             kwargs["trace"] = trace

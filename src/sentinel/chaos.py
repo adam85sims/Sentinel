@@ -88,6 +88,8 @@ __all__ = [
     "MemoryPressure",
     "ChaosBudget",
     "ChaosBudgetExhausted",
+    # Convenience
+    "inject_failures",
 ]
 
 
@@ -1721,3 +1723,24 @@ class MemoryPressure:
 class ChaosBudgetExhausted(Exception):
     """Raised when the chaos failure budget is exhausted."""
     pass
+
+
+def inject_failures(
+    env: Any,
+    tool: str,
+    failure_rate: float = 1.0,
+    failure_type: str = "error",
+    seed: int | None = None,
+) -> ToolFailureInjector:
+    """Inject failures into a tool on an Environment."""
+    mock_tool = env.get_tool(tool)
+    if mock_tool is None:
+        raise ValueError(f"No tool named '{tool}' in environment")
+    injector = ToolFailureInjector(
+        tool_name=tool,
+        failure_type=failure_type,
+        probability=failure_rate,
+        seed=seed,
+    )
+    injector.wrap(mock_tool)
+    return injector

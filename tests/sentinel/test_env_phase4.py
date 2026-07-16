@@ -79,9 +79,6 @@ class TestMockAPI:
 
     def test_error_injection(self):
         """API injects errors based on probability."""
-        import random
-        random.seed(42)
-
         api = MockAPI()
         api.add_route(RouteConfig(
             url_pattern="/flaky",
@@ -337,9 +334,6 @@ class TestMockDatabase:
 
     def test_error_injection(self):
         """Database injects errors based on probability."""
-        import random
-        random.seed(42)
-
         db = MockDatabase(error_probability=1.0)
         db.create_table("t")
 

@@ -11,7 +11,6 @@ from sentinel.baseline import (
     _serialize_result,
     _serialize_trace,
     delete_baseline,
-    get_baseline_dir,
     list_baselines,
     load_baseline,
     record_baseline,
@@ -30,15 +29,20 @@ from sentinel.otel import (
     _short_id,
     trace_to_spans,
 )
-from sentinel.runner import SentinelAssertionResult, SentinelResult
 
 # ──────────────────────────────────────────────────────
-# Helpers
+# Local helpers
 # ──────────────────────────────────────────────────────
 
 
 def _make_trace(tool_names: list[str] | None = None, n_errors: int = 0) -> AgentTrace:
-    """Build a populated AgentTrace for testing."""
+    """Build a populated AgentTrace for OTel testing.
+
+    Sets metadata, a single step with optional tool calls and errors, plus a
+    state change. ``_start_time`` is set to a fixed offset so spans have a
+    non-zero duration. The local conftest's ``make_trace`` doesn't cover this
+    shape because OTel tests need this exact structure.
+    """
     trace = AgentTrace()
     trace._start_time = time.time() - 0.5
     trace.metadata = {"model": "test-model", "session_id": "abc123"}
@@ -70,30 +74,6 @@ def _make_trace(tool_names: list[str] | None = None, n_errors: int = 0) -> Agent
 
     trace.finish()
     return trace
-
-
-def _make_result(
-    scenario_id: str,
-    passed: bool,
-    tool_names: list[str] | None = None,
-) -> SentinelResult:
-    """Build a SentinelResult for baseline testing."""
-    trace = _make_trace(tool_names=tool_names)
-    assertions = [
-        SentinelAssertionResult(
-            assertion_name="default_assert",
-            passed=passed,
-            error_message=None if passed else "failed",
-        )
-    ]
-    return SentinelResult(
-        scenario_id=scenario_id,
-        scenario_name=f"Scenario {scenario_id}",
-        passed=passed,
-        trace=trace,
-        assertion_results=assertions,
-        duration_ms=50.0,
-    )
 
 
 # ──────────────────────────────────────────────────────
@@ -198,8 +178,11 @@ class TestBaselineSerialization:
         assert len(deserialized.errors) == original.errors.__len__() or True
         assert deserialized.metadata["model"] == "test-model"
 
-    def test_result_round_trip(self):
-        original = _make_result("test-scenario", True, tool_names=["search"])
+    def test_result_round_trip(self, make_result):
+        original = make_result(
+            "test-scenario", passed=True, tool_names=["search"],
+            metadata={"model": "test-model", "session_id": "abc123"},
+        )
         serialized = _serialize_result(original)
         deserialized = _deserialize_result(serialized)
 
@@ -208,9 +191,10 @@ class TestBaselineSerialization:
         assert len(deserialized.assertion_results) == 1
         assert deserialized.assertion_results[0].assertion_name == "default_assert"
 
-    def test_result_with_failures_round_trip(self):
-        original = _make_result("fail-scenario", False)
-        original.assertion_results[0].error_message = "assertion failed"
+    def test_result_with_failures_round_trip(self, make_result):
+        original = make_result(
+            "fail-scenario", passed=False, error_message="assertion failed",
+        )
         serialized = _serialize_result(original)
         deserialized = _deserialize_result(serialized)
 
@@ -224,29 +208,25 @@ class TestBaselineSerialization:
 
 
 class TestBaselineStorage:
-    """Tests for baseline persistence. Uses a temp directory."""
+    """Tests for baseline persistence.
 
-    @pytest.fixture(autouse=True)
-    def tmp_baseline(self, tmp_path):
-        """Set up and tear down a temp baseline directory."""
-        self.project_root = str(tmp_path)
-        # Monkey-patch get_baseline_dir to use temp dir
-        self._orig_get_baseline_dir = get_baseline_dir
-        import sentinel.baseline as bl_mod
-        self._orig_fn = bl_mod.get_baseline_dir
-        bl_mod.get_baseline_dir = lambda pr=None: tmp_path / ".sentinel" / "baselines"
-        yield
-        bl_mod.get_baseline_dir = self._orig_fn
+    The ``tmp_baseline_dir`` fixture from ``tests/conftest.py`` overrides
+    ``sentinel.baseline.get_baseline_dir`` to a per-test temp directory and
+    restores it on teardown, even if the test fails mid-way.
+    """
 
-    def test_record_and_load(self):
-        results = [_make_result("s1", True), _make_result("s2", False)]
+    def test_record_and_load(self, make_result, tmp_baseline_dir, tmp_path):
+        results = [
+            make_result("s1", passed=True, metadata={"model": "test-model"}),
+            make_result("s2", passed=False, error_message="boom"),
+        ]
         path = record_baseline(
             results, "test-v1", tags=["ci"], description="Test baseline",
-            project_root=self.project_root,
+            project_root=str(tmp_path),
         )
         assert path.exists()
 
-        meta, loaded = load_baseline("test-v1", self.project_root)
+        meta, loaded = load_baseline("test-v1", str(tmp_path))
         assert meta.label == "test-v1"
         assert meta.scenario_count == 2
         assert meta.pass_count == 1
@@ -255,29 +235,29 @@ class TestBaselineStorage:
         assert len(loaded) == 2
         assert loaded[0].scenario_id == "s1"
 
-    def test_list_baselines(self):
-        record_baseline([_make_result("s1", True)], "first", project_root=self.project_root)
-        record_baseline([_make_result("s1", True)], "second", project_root=self.project_root)
-        labels = list_baselines(self.project_root)
+    def test_list_baselines(self, make_result, tmp_baseline_dir, tmp_path):
+        record_baseline([make_result("s1", passed=True)], "first", project_root=str(tmp_path))
+        record_baseline([make_result("s1", passed=True)], "second", project_root=str(tmp_path))
+        labels = list_baselines(str(tmp_path))
         assert "first" in labels
         assert "second" in labels
         assert len(labels) == 2
 
-    def test_delete_baseline(self):
-        record_baseline([_make_result("s1", True)], "to-delete", project_root=self.project_root)
-        assert delete_baseline("to-delete", self.project_root) is True
-        assert delete_baseline("to-delete", self.project_root) is False
-        labels = list_baselines(self.project_root)
+    def test_delete_baseline(self, make_result, tmp_baseline_dir, tmp_path):
+        record_baseline([make_result("s1", passed=True)], "to-delete", project_root=str(tmp_path))
+        assert delete_baseline("to-delete", str(tmp_path)) is True
+        assert delete_baseline("to-delete", str(tmp_path)) is False
+        labels = list_baselines(str(tmp_path))
         assert "to-delete" not in labels
 
-    def test_load_nonexistent_raises(self):
+    def test_load_nonexistent_raises(self, tmp_baseline_dir, tmp_path):
         with pytest.raises(FileNotFoundError):
-            load_baseline("does-not-exist", self.project_root)
+            load_baseline("does-not-exist", str(tmp_path))
 
-    def test_git_info_detected(self):
-        results = [_make_result("s1", True)]
+    def test_git_info_detected(self, make_result, tmp_baseline_dir, tmp_path):
+        results = [make_result("s1", passed=True)]
         meta_path = record_baseline(
-            results, "git-test", project_root=self.project_root,
+            results, "git-test", project_root=str(tmp_path),
         )
         with open(meta_path / "metadata.json") as f:
             meta = json.load(f)
@@ -285,22 +265,22 @@ class TestBaselineStorage:
         assert "git_sha" in meta
         assert "git_branch" in meta
 
-    def test_overwrite_baseline(self):
+    def test_overwrite_baseline(self, make_result, tmp_baseline_dir, tmp_path):
         """Recording the same label twice should overwrite."""
-        record_baseline([_make_result("s1", True)], "v1", project_root=self.project_root)
-        record_baseline([_make_result("s1", False)], "v1", project_root=self.project_root)
-        meta, results = load_baseline("v1", self.project_root)
+        record_baseline([make_result("s1", passed=True)], "v1", project_root=str(tmp_path))
+        record_baseline([make_result("s1", passed=False)], "v1", project_root=str(tmp_path))
+        meta, results = load_baseline("v1", str(tmp_path))
         assert meta.pass_count == 0
         assert meta.scenario_count == 1
 
-    def test_tags_and_description(self):
+    def test_tags_and_description(self, make_result, tmp_baseline_dir, tmp_path):
         record_baseline(
-            [_make_result("s1", True)],
+            [make_result("s1", passed=True)],
             "tagged",
             tags=["nightly", "integration"],
             description="Nightly integration run",
-            project_root=self.project_root,
+            project_root=str(tmp_path),
         )
-        meta, _ = load_baseline("tagged", self.project_root)
+        meta, _ = load_baseline("tagged", str(tmp_path))
         assert meta.tags == ["nightly", "integration"]
         assert meta.description == "Nightly integration run"

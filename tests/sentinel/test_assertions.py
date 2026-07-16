@@ -25,55 +25,38 @@ from sentinel.models import (
     ToolCall,
 )
 
-
-def _make_trace(tool_calls=None, state_changes=None, errors=None, steps=None):
-    """Helper to build an AgentTrace with given data."""
-    trace = AgentTrace()
-    if steps:
-        for step in steps:
-            trace.add_step(step)
-    for tc in tool_calls or []:
-        trace.add_tool_call(tc)
-    for sc in state_changes or []:
-        trace.add_state_change(sc)
-    for err in errors or []:
-        trace.add_error(err)
-    trace.finish()
-    return trace
-
-
 # ──────────────────────────────────────────────────────
 # Tool Call Assertions
 # ──────────────────────────────────────────────────────
 
 
 class TestAssertToolCalled:
-    def test_passes_when_tool_called(self):
-        trace = _make_trace(
+    def test_passes_when_tool_called(self, make_trace):
+        trace = make_trace(
             tool_calls=[ToolCall(tool_name="search", arguments={"q": "test"})]
         )
         assert_tool_called(trace, "search")  # Should not raise
 
-    def test_fails_when_tool_not_called(self):
-        trace = _make_trace()
+    def test_fails_when_tool_not_called(self, make_trace):
+        trace = make_trace()
         with pytest.raises(AssertionError, match="never invoked"):
             assert_tool_called(trace, "search")
 
-    def test_passes_when_arguments_match(self):
-        trace = _make_trace(
+    def test_passes_when_arguments_match(self, make_trace):
+        trace = make_trace(
             tool_calls=[ToolCall(tool_name="search", arguments={"q": "test"})]
         )
         assert_tool_called(trace, "search", q="test")
 
-    def test_fails_when_arguments_dont_match(self):
-        trace = _make_trace(
+    def test_fails_when_arguments_dont_match(self, make_trace):
+        trace = make_trace(
             tool_calls=[ToolCall(tool_name="search", arguments={"q": "test"})]
         )
         with pytest.raises(AssertionError, match="no call matched"):
             assert_tool_called(trace, "search", q="wrong")
 
-    def test_partial_argument_match(self):
-        trace = _make_trace(
+    def test_partial_argument_match(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(
                     tool_name="search",
@@ -86,12 +69,12 @@ class TestAssertToolCalled:
 
 
 class TestAssertToolNotCalled:
-    def test_passes_when_tool_not_called(self):
-        trace = _make_trace()
+    def test_passes_when_tool_not_called(self, make_trace):
+        trace = make_trace()
         assert_tool_not_called(trace, "delete_account")
 
-    def test_fails_when_tool_called(self):
-        trace = _make_trace(
+    def test_fails_when_tool_called(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(tool_name="delete_account", arguments={})
             ]
@@ -101,8 +84,8 @@ class TestAssertToolNotCalled:
 
 
 class TestAssertToolCallOrder:
-    def test_passes_correct_order(self):
-        trace = _make_trace(
+    def test_passes_correct_order(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(tool_name="search", arguments={}),
                 ToolCall(tool_name="lookup", arguments={}),
@@ -111,8 +94,8 @@ class TestAssertToolCallOrder:
         )
         assert_tool_call_order(trace, ["search", "lookup", "email"])
 
-    def test_passes_with_extra_calls_between(self):
-        trace = _make_trace(
+    def test_passes_with_extra_calls_between(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(tool_name="search", arguments={}),
                 ToolCall(tool_name="log", arguments={}),  # extra
@@ -122,8 +105,8 @@ class TestAssertToolCallOrder:
         )
         assert_tool_call_order(trace, ["search", "lookup", "email"])
 
-    def test_fails_wrong_order(self):
-        trace = _make_trace(
+    def test_fails_wrong_order(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(tool_name="email", arguments={}),
                 ToolCall(tool_name="search", arguments={}),
@@ -134,8 +117,8 @@ class TestAssertToolCallOrder:
 
 
 class TestAssertToolCallCount:
-    def test_passes_correct_count(self):
-        trace = _make_trace(
+    def test_passes_correct_count(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(tool_name="search", arguments={}),
                 ToolCall(tool_name="search", arguments={}),
@@ -143,8 +126,8 @@ class TestAssertToolCallCount:
         )
         assert_tool_call_count(trace, "search", 2)
 
-    def test_fails_wrong_count(self):
-        trace = _make_trace(
+    def test_fails_wrong_count(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(tool_name="search", arguments={}),
             ]
@@ -154,16 +137,16 @@ class TestAssertToolCallCount:
 
 
 class TestAssertNoToolErrors:
-    def test_passes_when_no_errors(self):
-        trace = _make_trace(
+    def test_passes_when_no_errors(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(tool_name="search", arguments={}, result="ok")
             ]
         )
         assert_no_tool_errors(trace)
 
-    def test_fails_when_errors_exist(self):
-        trace = _make_trace(
+    def test_fails_when_errors_exist(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(
                     tool_name="search", arguments={}, error="timeout"
@@ -180,16 +163,16 @@ class TestAssertNoToolErrors:
 
 
 class TestAssertStateConsistent:
-    def test_passes_when_state_matches(self):
-        trace = _make_trace(
+    def test_passes_when_state_matches(self, make_trace):
+        trace = make_trace(
             state_changes=[
                 StateChange(key="user_id", old_value=None, new_value="123")
             ]
         )
         assert_state_consistent(trace, "user_id", expected="123")
 
-    def test_fails_when_state_dismatched(self):
-        trace = _make_trace(
+    def test_fails_when_state_dismatched(self, make_trace):
+        trace = make_trace(
             state_changes=[
                 StateChange(key="user_id", old_value=None, new_value="456")
             ]
@@ -197,22 +180,22 @@ class TestAssertStateConsistent:
         with pytest.raises(AssertionError, match="to be '123'.*got '456'"):
             assert_state_consistent(trace, "user_id", expected="123")
 
-    def test_passes_when_no_key_and_no_expectation(self):
-        trace = _make_trace()
+    def test_passes_when_no_key_and_no_expectation(self, make_trace):
+        trace = make_trace()
         assert_state_consistent(trace, "nonexistent")
 
 
 class TestAssertStateChanged:
-    def test_passes_when_key_changed(self):
-        trace = _make_trace(
+    def test_passes_when_key_changed(self, make_trace):
+        trace = make_trace(
             state_changes=[
                 StateChange(key="status", old_value="pending", new_value="done")
             ]
         )
         assert_state_changed(trace, "status")
 
-    def test_fails_when_key_never_changed(self):
-        trace = _make_trace()
+    def test_fails_when_key_never_changed(self, make_trace):
+        trace = make_trace()
         with pytest.raises(AssertionError, match="to be modified"):
             assert_state_changed(trace, "status")
 
@@ -223,24 +206,24 @@ class TestAssertStateChanged:
 
 
 class TestAssertPermissionRespected:
-    def test_passes_when_approved_tool_called(self):
-        trace = _make_trace(
+    def test_passes_when_approved_tool_called(self, make_trace):
+        trace = make_trace(
             tool_calls=[ToolCall(tool_name="send_email", arguments={})]
         )
         assert_permission_respected(trace, "send_email", requires_approval=True)
 
 
 class TestAssertPermissionViolated:
-    def test_passes_when_forbidden_tool_called(self):
-        trace = _make_trace(
+    def test_passes_when_forbidden_tool_called(self, make_trace):
+        trace = make_trace(
             tool_calls=[
                 ToolCall(tool_name="drop_table", arguments={})
             ]
         )
         assert_permission_violated(trace, "drop_table")
 
-    def test_fails_when_forbidden_tool_not_called(self):
-        trace = _make_trace()
+    def test_fails_when_forbidden_tool_not_called(self, make_trace):
+        trace = make_trace()
         with pytest.raises(AssertionError, match="Agent behaved correctly"):
             assert_permission_violated(trace, "drop_table")
 
@@ -251,8 +234,9 @@ class TestAssertPermissionViolated:
 
 
 class TestAssertGracefulDegradation:
-    def test_passes_when_trace_completed(self):
-        trace = _make_trace()
+    def test_passes_when_trace_completed(self, make_trace):
+        trace = make_trace()
+        trace.finish()
         assert_graceful_degradation(trace)
 
     def test_fails_when_trace_not_finished(self):
@@ -260,8 +244,8 @@ class TestAssertGracefulDegradation:
         with pytest.raises(AssertionError, match="never finished"):
             assert_graceful_degradation(trace)
 
-    def test_fails_on_unrecoverable_critical_error(self):
-        trace = _make_trace(
+    def test_fails_on_unrecoverable_critical_error(self, make_trace):
+        trace = make_trace(
             errors=[
                 Error(
                     message="fatal crash",
@@ -270,34 +254,35 @@ class TestAssertGracefulDegradation:
                 )
             ]
         )
+        trace.finish()
         with pytest.raises(AssertionError, match="unrecoverable"):
             assert_graceful_degradation(trace)
 
 
 class TestAssertNoSilentFailure:
-    def test_passes_when_output_exists(self):
+    def test_passes_when_output_exists(self, make_trace):
         step = Step(
             step_id=1, action=StepAction.RESPOND, output="All done"
         )
-        trace = _make_trace(steps=[step])
+        trace = make_trace(steps=[step])
         assert_no_silent_failure(trace)
 
-    def test_fails_when_no_steps(self):
-        trace = _make_trace()
+    def test_fails_when_no_steps(self, make_trace):
+        trace = make_trace()
         with pytest.raises(AssertionError, match="no steps"):
             assert_no_silent_failure(trace)
 
-    def test_fails_when_output_is_none(self):
+    def test_fails_when_output_is_none(self, make_trace):
         step = Step(step_id=1, action=StepAction.RESPOND, output=None)
-        trace = _make_trace(steps=[step])
+        trace = make_trace(steps=[step])
         with pytest.raises(AssertionError, match="output is None"):
             assert_no_silent_failure(trace)
 
-    def test_fails_when_validator_rejects(self):
+    def test_fails_when_validator_rejects(self, make_trace):
         step = Step(
             step_id=1, action=StepAction.RESPOND, output="garbage"
         )
-        trace = _make_trace(steps=[step])
+        trace = make_trace(steps=[step])
         with pytest.raises(AssertionError, match="failed validation"):
             assert_no_silent_failure(
                 trace, validator=lambda x: x != "garbage"

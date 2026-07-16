@@ -286,8 +286,18 @@ class TestGovernanceAPI:
         assert callable(extract_claims)
         assert callable(collect_evidence)
 
-    def test_run_audit_returns_audit_result(self, tmp_path):
+    def test_run_audit_returns_audit_result(self, tmp_path, monkeypatch):
+        import subprocess
+        from types import SimpleNamespace
+
         from governance import run_audit
+
+        # Stub subprocess.run so collect_evidence does not recursively invoke
+        # the real pytest suite. evidence.py only reads returncode and stdout
+        # from the result, so a SimpleNamespace is enough.
+        fake_result = SimpleNamespace(returncode=0, stdout="", stderr="")
+        monkeypatch.setattr(subprocess, "run", lambda *a, **kw: fake_result)
+
         # Create minimal project structure
         (tmp_path / "src").mkdir()
         (tmp_path / "tests").mkdir()

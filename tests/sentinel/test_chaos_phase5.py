@@ -1,15 +1,13 @@
 """Tests for Phase 5 chaos injectors: ContextDegradation, CascadingFailures, SpecDrift."""
 
-import pytest
-import time
-from sentinel.chaos import (
-    ContextDegradation,
-    CascadingFailures,
-    SpecDrift,
-    DegradationStrategy,
-    DriftIntensity,
-)
 
+import pytest
+
+from sentinel.chaos import (
+    CascadingFailures,
+    ContextDegradation,
+    SpecDrift,
+)
 
 # ──────────────────────────────────────────────────────
 # ContextDegradation Tests
@@ -254,6 +252,27 @@ class TestCascadingFailures:
         assert target == "user_interface"
         # auth -> api_server
         target = cascade._derive_cascading_target({"tool_name": "auth"})
+        assert target == "api_server"
+
+    def test_cascade_target_derivation_custom_graph(self):
+        """Cascading target should follow custom dependency graph."""
+        graph = {
+            "payment_gateway": "order_service",
+            "order_service": "frontend_ui",
+            "db_replica": "backup_manager",
+        }
+        cascade = CascadingFailures(dependency_graph=graph, seed=42)
+
+        # Exact match
+        target = cascade._derive_cascading_target({"tool_name": "payment_gateway"})
+        assert target == "order_service"
+
+        # Case-insensitive prefix/substring match
+        target = cascade._derive_cascading_target({"tool_name": "my_db_replica_prod"})
+        assert target == "backup_manager"
+
+        # Fallback to default heuristic if not in custom graph
+        target = cascade._derive_cascading_target({"tool_name": "database"})
         assert target == "api_server"
 
     def test_cascade_error_derivation(self):

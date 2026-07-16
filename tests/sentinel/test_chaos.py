@@ -1,18 +1,14 @@
 """Tests for Sentinel chaos/failure injection layer."""
 
 import pytest
+
 from sentinel.chaos import (
     ChaosBudget,
     ChaosBudgetExhausted,
-    ChaosToolWrapper,
-    InjectionRecord,
     LLMFailureInjector,
-    LLMFailureType,
     ToolFailureInjector,
-    ToolFailureType,
 )
 from sentinel.env import MockTool, MockToolError, RateLimitError, TimeoutError
-
 
 # ──────────────────────────────────────────────────────
 # ToolFailureInjector Tests

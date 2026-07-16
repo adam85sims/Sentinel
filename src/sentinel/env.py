@@ -10,6 +10,7 @@ environment simulation beyond simple tool mocking.
 """
 from __future__ import annotations
 
+import itertools
 import re
 import time
 from collections.abc import Callable
@@ -59,6 +60,9 @@ __all__ = [
 ]
 
 
+_call_counter = itertools.count()
+
+
 @dataclass
 class MockToolCall:
     """Record of a single call to a mock tool.
@@ -71,6 +75,7 @@ class MockToolCall:
     error: str | None = None
     duration_ms: float = 0.0
     timestamp: float = field(default_factory=time.time)
+    sequence: int = field(default_factory=lambda: next(_call_counter))
 
 
 @dataclass
@@ -1094,7 +1099,7 @@ class Environment:
         calls = []
         for tool in self.tools.values():
             calls.extend(tool.calls)
-        return sorted(calls, key=lambda c: c.timestamp)
+        return sorted(calls, key=lambda c: (c.timestamp, c.sequence))
 
     def reset(self) -> None:
         """Clear all recorded calls."""

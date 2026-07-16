@@ -49,6 +49,7 @@ otel = ["opentelemetry-sdk>=1.0.0", "opentelemetry-exporter-otlp>=1.0.0"]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pytest-asyncio",
     "ruff>=0.1.0",
 ]
 
@@ -62,6 +63,7 @@ all = [
     "opentelemetry-exporter-otlp>=1.0.0",
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pytest-asyncio",
     "ruff>=0.1.0",
 ]
 

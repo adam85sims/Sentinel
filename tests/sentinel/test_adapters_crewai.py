@@ -1,7 +1,8 @@
 """Tests for Sentinel CrewAI adapter."""
 
 import pytest
-from sentinel.adapters.crewai import SentinelCrewTool, CrewAgentWrapper, wrap_crew_agent
+
+from sentinel.adapters.crewai import SentinelCrewTool, wrap_crew_agent
 from sentinel.env import MockTool, MockToolError, RateLimitError
 from sentinel.models import AgentTrace
 

@@ -16,17 +16,16 @@ Strategy:
 """
 
 import pytest
-from sentinel.adapters.langchain import SentinelToolAdapter, wrap_agent
-from sentinel.env import MockTool, MockToolError, TimeoutError, RateLimitError
-from sentinel.models import AgentTrace
+
+from sentinel.adapters.langchain import SentinelToolAdapter
 from sentinel.assertions import (
-    assert_tool_called,
-    assert_tool_not_called,
-    assert_tool_call_order,
-    assert_tool_call_count,
     assert_no_tool_errors,
-    assert_graceful_degradation,
+    assert_tool_call_count,
+    assert_tool_call_order,
+    assert_tool_called,
 )
+from sentinel.env import MockTool, RateLimitError, TimeoutError
+from sentinel.models import AgentTrace
 
 # ─── Real LangChain tools ──────────────────────────────────────
 # These are actual @tool-decorated functions, not mocks.

@@ -1,8 +1,10 @@
 """Tests for Sentinel OpenAI Agents SDK adapter."""
 
 import json
+
 import pytest
-from sentinel.adapters.openai import SentinelFunctionTool, OpenAIAgentWrapper, wrap_openai_agent
+
+from sentinel.adapters.openai import SentinelFunctionTool, wrap_openai_agent
 from sentinel.env import MockTool, MockToolError, RateLimitError
 from sentinel.models import AgentTrace
 

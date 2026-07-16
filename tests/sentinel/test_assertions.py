@@ -1,6 +1,7 @@
 """Tests for Sentinel behavioral assertions."""
 
 import pytest
+
 from sentinel.assertions import (
     assert_graceful_degradation,
     assert_no_silent_failure,
@@ -10,8 +11,8 @@ from sentinel.assertions import (
     assert_state_changed,
     assert_state_consistent,
     assert_tool_call_count,
-    assert_tool_called,
     assert_tool_call_order,
+    assert_tool_called,
     assert_tool_not_called,
 )
 from sentinel.models import (

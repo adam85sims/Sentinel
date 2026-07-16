@@ -810,6 +810,7 @@ class CascadingFailures:
                            a single root cause (prevents infinite chains).
         propagation_delay_steps: Steps between cascade levels (0 = immediate).
         seed: Random seed for deterministic cascade behavior.
+        dependency_graph: Custom mapping of components/tools to downstream targets.
     """
 
     def __init__(
@@ -818,11 +819,13 @@ class CascadingFailures:
         max_cascade_depth: int = 3,
         propagation_delay_steps: int = 1,
         seed: int | None = None,
+        dependency_graph: dict[str, str] | None = None,
     ) -> None:
         self.cascade_probability = max(0.0, min(1.0, cascade_probability))
         self.max_cascade_depth = max_cascade_depth
         self.propagation_delay_steps = propagation_delay_steps
         self._rng = random.Random(seed)
+        self.dependency_graph = dependency_graph
 
         self._injection_count: int = 0
         self._records: list[InjectionRecord] = []
@@ -921,11 +924,23 @@ class CascadingFailures:
     def _derive_cascading_target(self, event: dict[str, Any]) -> str:
         """Derive the tool/agent that fails next in the cascade.
 
-        Uses a simple name-based heuristic: downstream dependencies
-        often share a prefix or are named in the error context.
+        Uses the user-configured dependency graph if provided, falling back
+        to a simple name-based heuristic: downstream dependencies often share
+        a prefix or are named in the error context.
         """
         original = event.get("tool_name", event.get("agent_id", "unknown"))
-        # Common cascade patterns in multi-agent systems
+
+        # 1. Try custom dependency graph
+        if self.dependency_graph:
+            # Try direct match
+            if original in self.dependency_graph:
+                return self.dependency_graph[original]
+            # Try lower-case prefix match
+            for source, target in self.dependency_graph.items():
+                if source.lower() in original.lower():
+                    return target
+
+        # 2. Fallback to common cascade patterns in multi-agent systems
         cascade_map = {
             "database": "api_server",
             "api_server": "user_interface",

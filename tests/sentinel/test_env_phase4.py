@@ -1,6 +1,7 @@
 """Tests for MockAPI and MockDatabase (Phase 4 env extensions)."""
 
 import pytest
+
 from sentinel.env import (
     EnvironmentBuilder,
     MockAPI,
@@ -10,7 +11,6 @@ from sentinel.env import (
     RateLimitError,
     RouteConfig,
 )
-
 
 # ──────────────────────────────────────────────────────
 # MockAPI

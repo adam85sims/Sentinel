@@ -1,19 +1,18 @@
 """Tests for Sentinel runner — @sentinel_test decorator, ScenarioRunner, SentinelResult."""
 
 import functools
-import pytest
+
+from sentinel.assertions import assert_tool_called, assert_tool_not_called
+from sentinel.env import Environment, EnvironmentBuilder
+from sentinel.models import AgentTrace
 from sentinel.runner import (
     AgentConfig,
-    SentinelAssertionResult,
     ScenarioRunner,
+    SentinelAssertionResult,
     SentinelResult,
     SentinelScenario,
     sentinel_test,
 )
-from sentinel.env import Environment, EnvironmentBuilder, MockTool, MockToolError
-from sentinel.models import AgentTrace
-from sentinel.assertions import assert_tool_called, assert_tool_not_called
-
 
 # ──────────────────────────────────────────────────────
 # @sentinel_test decorator
@@ -210,6 +209,19 @@ class TestScenarioRunner:
 
         runner = ScenarioRunner()
         results = runner.run_batch(scenarios, agent_fn=_simple_agent)
+
+        assert len(results) == 3
+        assert all(r.passed for r in results)
+
+    def test_run_batch_parallel(self):
+        """run_batch executes multiple scenarios in parallel with max_workers."""
+        scenarios = [
+            SentinelScenario(id=f"parallel-{i}", name=f"Parallel {i}", task="task")
+            for i in range(3)
+        ]
+
+        runner = ScenarioRunner()
+        results = runner.run_batch(scenarios, agent_fn=_simple_agent, max_workers=3)
 
         assert len(results) == 3
         assert all(r.passed for r in results)

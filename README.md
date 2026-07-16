@@ -128,10 +128,14 @@ injector = ToolFailureInjector(
 # Degrade context with quadratic acceleration
 degradation = ContextDegradation(strategy="TRUNCATION")
 
-# Cascade failures from database to API to UI
+# Cascade failures from database to API to UI using a custom dependency graph
 cascade = CascadingFailures(
     cascade_probability=0.7,
     max_cascade_depth=3,
+    dependency_graph={
+        "database": "api_server",
+        "api_server": "user_interface",
+    }
 )
 
 # Cap total failures per run

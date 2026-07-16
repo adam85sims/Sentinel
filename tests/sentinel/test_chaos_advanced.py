@@ -4,17 +4,14 @@ Tests NetworkPartition, ClockSkew, MemoryPressure, and chaos presets.
 """
 
 import time
-import pytest
+
 from sentinel.chaos import (
-    NetworkPartition,
     ClockSkew,
     MemoryPressure,
-    ToolFailureInjector,
     MockToolError,
+    NetworkPartition,
 )
-from sentinel.env import MockTool, TimeoutError
-from sentinel.models import AgentTrace
-
+from sentinel.env import MockTool
 
 # ─── NetworkPartition ──────────────────────────────────────────
 
@@ -64,7 +61,7 @@ class TestNetworkPartition:
         # First 3 calls are blocked
         for _ in range(3):
             result = partition._should_inject()
-            assert result, f"Call should inject before healing"
+            assert result, "Call should inject before healing"
         # After healing, no more blocks
         assert not partition._should_inject()
         assert not partition._partition_active
@@ -259,13 +256,6 @@ class TestChaosPresets:
     def test_import_presets(self):
         """All presets can be imported."""
         from sentinel.chaos_presets import (
-            PRODUCTION_INCIDENT,
-            DEPLOY_FRIDAY,
-            TRAFFIC_SPIKE,
-            NETWORK_PARTITION,
-            TIME_TRAVEL,
-            MEMORY_LEAK,
-            COMPLETE_OUTAGE,
             PRESETS,
         )
         assert len(PRESETS) == 7

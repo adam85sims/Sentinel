@@ -1,14 +1,9 @@
 """Tests for governance modules — evidence, claims, extract, auditor config, and library API."""
 
 import json
-import os
-from datetime import date, datetime, timedelta
-from pathlib import Path
+from datetime import date, timedelta
 
-import pytest
-
-from common.models import AuditResult, Discrepancy, Severity, Verdict
-
+from common.models import AuditResult, Severity, Verdict
 
 # ─── Evidence collection ──────────────────────────────────────────
 
@@ -282,17 +277,9 @@ class TestGovernanceAPI:
 
     def test_import_all_public_names(self):
         from governance import (
-            run_audit,
-            AuditResult,
-            Claim,
-            Discrepancy,
-            Evidence,
-            Severity,
-            Verdict,
-            extract_claims,
             collect_evidence,
-            extract_findings,
-            format_report,
+            extract_claims,
+            run_audit,
         )
         # Just verify all imports work
         assert callable(run_audit)

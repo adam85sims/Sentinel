@@ -5,19 +5,23 @@ that could cause failures in production use.
 """
 
 import json
+
 import pytest
-from pathlib import Path
 
-from sentinel.env import (
-    MockTool, MockToolError, RateLimitError, TimeoutError,
-    EnvironmentBuilder, Environment,
-)
-from sentinel.models import AgentTrace, ToolCall, Error, ErrorSeverity, Step, StepAction
 from sentinel.assertions import (
-    assert_tool_called, assert_tool_not_called, assert_no_tool_errors,
-    assert_tool_call_count, assert_tool_call_order,
+    assert_no_tool_errors,
+    assert_tool_call_count,
+    assert_tool_called,
+    assert_tool_not_called,
 )
-
+from sentinel.env import (
+    EnvironmentBuilder,
+    MockTool,
+    MockToolError,
+    RateLimitError,
+    TimeoutError,
+)
+from sentinel.models import AgentTrace, ErrorSeverity, Step, StepAction, ToolCall
 
 # ─── Empty/Null Inputs ─────────────────────────────────────────
 
@@ -262,7 +266,6 @@ class TestScenarioEdgeCases:
 
     def test_yaml_with_single_scenario(self, tmp_path):
         """Single scenario (not a list) should work."""
-        from sentinel.cli import _load_scenario_file
         import yaml
 
         yaml_file = tmp_path / "single.yaml"

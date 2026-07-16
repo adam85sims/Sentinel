@@ -1,6 +1,5 @@
 """Tests for Sentinel core data models."""
 
-import pytest
 from sentinel.models import (
     AgentTrace,
     Error,

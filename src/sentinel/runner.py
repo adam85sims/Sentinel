@@ -40,6 +40,7 @@ import functools
 import time
 import traceback
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -305,12 +306,21 @@ class ScenarioRunner:
         self,
         scenarios: list[SentinelScenario],
         agent_fn: Callable[..., Any] | None = None,
+        max_workers: int = 1,
     ) -> list[SentinelResult]:
-        """Run multiple scenarios sequentially.
+        """Run multiple scenarios.
 
         Returns a list of SentinelResults in the same order as the input.
         """
-        return [self.run(scenario, agent_fn=agent_fn) for scenario in scenarios]
+        if max_workers <= 1:
+            return [self.run(scenario, agent_fn=agent_fn) for scenario in scenarios]
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [
+                executor.submit(self.run, scenario, agent_fn=agent_fn)
+                for scenario in scenarios
+            ]
+            return [f.result() for f in futures]
 
     def _build_env(self, config: dict[str, Any]) -> Environment:
         """Build an Environment from a configuration dict.

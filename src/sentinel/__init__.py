@@ -42,7 +42,7 @@ from sentinel.chaos import (
     SpecDrift,
     inject_failures,
 )
-from sentinel.chaos_presets import list_presets, load_preset, PRESETS
+from sentinel.chaos_presets import PRESETS, list_presets, load_preset
 from sentinel.env import (
     Environment,
     EnvironmentBuilder,

@@ -4,7 +4,7 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-519%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-520%20passing-brightgreen.svg)](#testing)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-red.svg)](https://docs.astral.sh/ruff/)
 
 ## The Problem
@@ -39,12 +39,43 @@ pip install git+https://github.com/adam85sims/Sentinel.git
 # Or with framework adapters
 pip install "git+https://github.com/adam85sims/Sentinel.git[adapters]"
 
+# Or with the WebUI dashboard
+pip install "git+https://github.com/adam85sims/Sentinel.git[web]"
+
 # Run the quickstart example
 python examples/langchain_quickstart.py
 
 # Run a YAML scenario
 sentinel run --path examples/basic_scenario.yaml
 ```
+
+## WebUI Dashboard
+
+Sentinel includes a browser-based dashboard for running scenarios, viewing
+traces, and comparing baselines — all wrapping the core Python API.
+
+```bash
+# Install with web dependencies
+pip install "git+https://github.com/adam85sims/Sentinel.git[web]"
+
+# Start the dashboard
+sentinel serve
+
+# Or with a custom port
+sentinel serve --port 9090
+```
+
+Then open [http://localhost:8080](http://localhost:8080) in your browser.
+
+Features:
+- **Dashboard** — pass/fail stats, recent runs, quick actions
+- **Scenarios** — browse, inspect, and run test scenarios
+- **Runs** — live execution with step-by-step trace visualization
+- **Baselines** — saved results with regression diff comparison
+- **Live Console** — real-time log streaming via SSE during test runs
+
+See [src/sentinel/web/README.md](src/sentinel/web/README.md) for the full
+WebUI guide.
 
 ## Architecture
 
@@ -58,7 +89,14 @@ src/sentinel/
 ├── baseline.py     # JSON baseline storage with git integration
 ├── otel.py         # OpenTelemetry span model
 ├── cli.py          # Full CLI: run, list, info, baseline, diff, report
-└── adapters/       # LangChain, CrewAI, OpenAI SDK, Generic
+├── adapters/       # LangChain, CrewAI, OpenAI SDK, Generic
+└── web/            # FastAPI WebUI dashboard (optional)
+    ├── app.py          # FastAPI application factory
+    ├── server.py       # Uvicorn entry point
+    ├── api/            # REST API routers (scenarios, runs, baselines)
+    ├── services/       # Service layer wrapping core modules
+    ├── schemas/        # Pydantic request/response models
+    └── static/         # Frontend (HTML, CSS, JS)
 ```
 
 ## The Chaos Module (Differentiator)
@@ -85,6 +123,8 @@ sentinel baseline show           # Show recorded baseline
 sentinel diff                    # Compare current vs baseline
 sentinel report                  # Generate regression report
 sentinel trace <run-id>          # Show execution trace
+sentinel serve                   # Start WebUI dashboard
+sentinel serve --port 9090       # Custom port
 ```
 
 ## Framework Adapters
@@ -135,7 +175,7 @@ cascade = CascadingFailures(
     dependency_graph={
         "database": "api_server",
         "api_server": "user_interface",
-    }
+    },
 )
 
 # Cap total failures per run
@@ -149,6 +189,8 @@ budget = ChaosBudget(max_failures=10)
 - [Adapters Guide](docs/ADAPTERS_GUIDE.md) — How to write custom adapters
 - [Integration Testing](docs/INTEGRATION_TESTING.md) — Proof of value with real LangChain tools
 - [API Reference](docs/api.md) — Module documentation
+- [WebUI Design](docs/WEBUI_DESIGN.md) — Architecture and implementation plan
+- [WebUI Guide](src/sentinel/web/README.md) — Getting started with the dashboard
 
 ## Testing
 

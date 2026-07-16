@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Shield shape -->
+  <path d="M32 4 L56 14 L56 32 C56 48 44 58 32 62 C20 58 8 48 8 32 L8 14 Z" 
+        fill="#161b22" stroke="#58a6ff" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Eye circle -->
+  <ellipse cx="32" cy="30" rx="14" ry="10" fill="none" stroke="#58a6ff" stroke-width="2"/>
+  <!-- Pupil -->
+  <circle cx="32" cy="30" r="4" fill="#58a6ff"/>
+  <!-- S letter overlay -->
+  <text x="32" y="53" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#58a6ff">S</text>
+  <!-- Shield highlight -->
+  <path d="M32 6 L54 15 L54 16 L32 7 L10 16 L10 15 Z" fill="none" stroke="#58a6ff" stroke-width="0.5" opacity="0.3"/>
+</svg>

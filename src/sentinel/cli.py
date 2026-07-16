@@ -591,6 +591,47 @@ def trace(baseline_label: str, output_path: str | None, endpoint: str | None) ->
             click.echo(output)
 
 
+
+# ──────────────────────────────────────────────────────
+# sentinel serve (WebUI)
+# ──────────────────────────────────────────────────────
+
+
+@cli.command()
+@click.option("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1).")
+@click.option("--port", default=8080, type=int, help="Bind port (default: 8080).")
+@click.option("--reload", is_flag=True, default=False, help="Auto-reload on code changes.")
+def serve(host: str, port: int, reload: bool) -> None:
+    """Start the Sentinel WebUI dashboard.
+
+    
+    Examples:
+        sentinel serve                        # localhost:8080
+        sentinel serve --port 3000            # localhost:3000
+        sentinel serve --host 0.0.0.0 --port 8080  # all interfaces
+    """
+    try:
+        import uvicorn
+    except ImportError:
+        click.echo(
+            "[sentinel] ERROR: Web dependencies not installed. "
+            "Install with: pip install sentinel[web]",
+            err=True,
+        )
+        sys.exit(1)
+
+    click.echo(f"[sentinel] Starting WebUI at http://{host}:{port}")
+    click.echo("[sentinel] Press Ctrl+C to stop.")
+
+    uvicorn.run(
+        "sentinel.web.app:create_app",
+        host=host,
+        port=port,
+        reload=reload,
+        factory=True,
+    )
+
+
 # ──────────────────────────────────────────────────────
 # Discovery helpers
 # ──────────────────────────────────────────────────────

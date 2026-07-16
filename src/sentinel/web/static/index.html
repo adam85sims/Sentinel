@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinel — Agent Behavioral Testing</title>
+  <link rel="stylesheet" href="/css/sentinel.css">
+  <link rel="icon" type="image/svg+xml" href="/img/sentinel-logo.svg">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+      <div class="nav-left">
+        <a href="#/" class="nav-logo">
+          <img src="/img/sentinel-logo.svg" alt="Sentinel" class="logo-img">
+          <span class="logo-text">SENTINEL</span>
+        </a>
+      </div>
+      <div class="nav-links">
+        <a href="#/" class="nav-link" data-route="dashboard">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+          Dashboard
+        </a>
+        <a href="#/scenarios" class="nav-link" data-route="scenarios">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h4v4H2V2zm6 0h4v4H8V2zm-6 6h4v4H2V8zm6 0h4v4H8V8z" opacity=".7"/></svg>
+          Scenarios
+        </a>
+        <a href="#/runs" class="nav-link" data-route="runs">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0-1A6 6 0 1 0 8 2a6 6 0 0 0 0 12zM6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/></svg>
+          Runs
+        </a>
+        <a href="#/baselines" class="nav-link" data-route="baselines">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.068.727a.5.5 0 0 1 .884 0l4.5 7.5A.5.5 0 0 1 12 8.5v7a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5V11H8v3.5a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 1 .168-.37l4.5-7.5z"/></svg>
+          Baselines
+        </a>
+        <a href="#/settings" class="nav-link" data-route="settings">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/></svg>
+          Settings
+        </a>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="app-content" class="main-content">
+      <div class="loading-placeholder">
+        <div class="spinner"></div>
+        <p>Loading…</p>
+      </div>
+    </main>
+
+    <!-- Live Log Console -->
+    <div class="log-console" id="log-console">
+      <div class="log-console-header" id="log-console-toggle">
+        <span class="log-title">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5zm0 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm0 4a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5z"/></svg>
+          Live Console
+        </span>
+        <button class="btn-ghost log-collapse-btn" id="log-collapse-btn" title="Toggle console">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.646 11.854a.5.5 0 0 0 .708 0L8 6.207l5.646 5.647a.5.5 0 0 0 .708-.708l-6-6a.5.5 0 0 0-.708 0l-6 6a.5.5 0 0 0 0 .708z"/></svg>
+        </button>
+      </div>
+      <div class="log-console-body" id="log-console-body">
+        <div class="log-entries" id="log-entries">
+          <div class="log-entry log-info">
+            <span class="log-time">--:--:--</span>
+            <span class="log-msg">Sentinel console ready. Connect to a run to see live output.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS Modules (order matters: api.js first, then router, then pages, then app) -->
+  <script src="/js/api.js"></script>
+  <script src="/js/streaming.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/dashboard.js"></script>
+  <script src="/js/scenarios.js"></script>
+  <script src="/js/runs.js"></script>
+  <script src="/js/traces.js"></script>
+  <script src="/js/baselines.js"></script>
+  <script src="/js/settings.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

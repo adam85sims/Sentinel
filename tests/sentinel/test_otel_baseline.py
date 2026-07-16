@@ -254,16 +254,21 @@ class TestBaselineStorage:
         with pytest.raises(FileNotFoundError):
             load_baseline("does-not-exist", str(tmp_path))
 
-    def test_git_info_detected(self, make_result, tmp_baseline_dir, tmp_path):
-        results = [make_result("s1", passed=True)]
-        meta_path = record_baseline(
-            results, "git-test", project_root=str(tmp_path),
-        )
-        with open(meta_path / "metadata.json") as f:
-            meta = json.load(f)
-        # Git info may or may not be detected depending on environment
-        assert "git_sha" in meta
-        assert "git_branch" in meta
+    def test_git_info_detected(self):
+        """``_detect_git_info`` returns a non-empty SHA and branch in a git repo.
+
+        The keys ``git_sha`` / ``git_branch`` always exist in saved baseline
+        metadata (they default to ``""`` in ``BaselineMetadata``), so just
+        checking for key presence does not exercise detection at all.
+        """
+        import re
+        from sentinel.cli import _detect_git_info
+
+        sha, branch = _detect_git_info()
+        assert sha, "expected a non-empty git SHA inside a git repository"
+        assert branch, "expected a non-empty git branch inside a git repository"
+        # ``--short`` SHA is 7+ hex characters.
+        assert re.match(r"^[0-9a-f]{7,}$", sha), f"unexpected SHA shape: {sha!r}"
 
     def test_overwrite_baseline(self, make_result, tmp_baseline_dir, tmp_path):
         """Recording the same label twice should overwrite."""

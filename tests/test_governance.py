@@ -252,10 +252,18 @@ class TestAuditorConfig:
         assert cfg["backend"]["type"] == "none"  # Default is deterministic-only
 
     def test_default_model(self):
+        import re
+
         from governance.auditor import load_auditor_config
         cfg = load_auditor_config()
-        # Model configured in auditor.yaml — base granite-4.1-3b
-        assert "granite" in cfg["primary"]["model"].lower()
+        # Lock the contract (a non-empty ``provider/name`` model identifier)
+        # without locking the specific model. The actual model may change
+        # via ``auditor.yaml`` or env vars; this test guards the *shape*.
+        model = cfg["primary"]["model"]
+        assert model, "primary.model must be a non-empty string"
+        assert re.match(r"^[a-z0-9_.-]+/[a-z0-9_.-]+$", model), (
+            f"primary.model {model!r} is not in expected provider/name format"
+        )
 
     def test_env_override_url(self, monkeypatch):
         monkeypatch.setenv("AGENT_FW_AUDITOR_URL", "http://custom:9999/v1/chat/completions")

@@ -43,6 +43,7 @@ async def start_run(request: RunRequest) -> RunResponse:
             scenario_id=request.scenario_id,
             manager=run_manager,
             scenario_dir=None,  # use default
+            model_endpoint_id=request.model_endpoint,
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
@@ -91,6 +92,34 @@ async def get_run(run_id: str) -> RunDetailResponse:
     if state is None:
         raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
     return _state_to_detail(state)
+
+
+@router.get("/{run_id}/trace")
+async def get_run_trace(run_id: str):
+    """Get the trace for a specific run.
+
+    Returns the full AgentTrace as a dictionary, including tool calls,
+    state changes, errors, and timing information.
+    """
+    state = run_manager.get(run_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
+    if state.result is None or state.result.trace is None:
+        raise HTTPException(status_code=404, detail=f"Trace not available for run '{run_id}'")
+    trace_dict = state.result.trace.to_dict()
+    # Include step details (input/output) for the frontend timeline
+    trace_dict["steps"] = [
+        {
+            "step_id": s.step_id,
+            "action": s.action.value if hasattr(s.action, "value") else str(s.action),
+            "input": s.input,
+            "output": s.output,
+            "duration_ms": s.duration_ms,
+            "error": str(s.error) if s.error else None,
+        }
+        for s in state.result.trace.steps
+    ]
+    return trace_dict
 
 
 @router.get("/{run_id}/stream")

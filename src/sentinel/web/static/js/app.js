@@ -64,8 +64,10 @@
       container.innerHTML = '<div class="loading-spinner"></div>';
 
       // Call the page renderer (may be async)
+      // Note: render functions use document.getElementById('app-content')
+      // directly, so we don't pass container — only the route params.
       try {
-        const result = matched.handler(container, ...matched.params);
+        const result = matched.handler(...matched.params);
         // If it returns a promise, handle errors
         if (result && typeof result.catch === "function") {
           result.catch((err) => {

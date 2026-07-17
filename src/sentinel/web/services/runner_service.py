@@ -16,6 +16,7 @@ Key design decisions:
 from __future__ import annotations
 
 import asyncio
+import json
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -32,6 +33,7 @@ from sentinel.runner import ScenarioRunner, SentinelResult, SentinelScenario
 # Walk up: services/ -> web/ -> sentinel/ -> src/ -> project root
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
 _DEFAULT_SCENARIO_DIR = _PROJECT_ROOT / "examples"
+_CONFIG_FILE = _PROJECT_ROOT / "sentinel-web.yaml"
 
 # Thread pool for running scenarios without blocking the event loop.
 # Max 4 concurrent scenario runs — keeps the server responsive while
@@ -208,6 +210,7 @@ async def run_scenario(
     scenario_id: str,
     manager: RunManager,
     scenario_dir: str | None = None,
+    model_endpoint_id: str | None = None,
 ) -> RunState:
     """Execute a scenario asynchronously via the thread pool.
 
@@ -233,6 +236,9 @@ async def run_scenario(
     # Build the SentinelScenario dataclass
     sentinel_scenario = _build_sentinel_scenario(detail)
 
+    # Resolve the agent function from the model endpoint
+    agent_fn = _build_agent_fn(model_endpoint_id)
+
     # Submit the blocking run to the thread pool
     loop = asyncio.get_running_loop()
     loop.run_in_executor(
@@ -240,12 +246,132 @@ async def run_scenario(
         _execute_in_thread,
         state,
         sentinel_scenario,
+        agent_fn,
     )
 
     return state
 
 
-def _execute_in_thread(state: RunState, scenario: SentinelScenario) -> None:
+# ── Agent function builder ──
+
+
+def _load_endpoint_config(endpoint_id: str) -> dict[str, Any] | None:
+    """Load a model endpoint config from sentinel-web.yaml by ID."""
+    if not _CONFIG_FILE.exists():
+        return None
+    try:
+        import yaml
+        with open(_CONFIG_FILE, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        for ep in data.get("endpoints", []):
+            if ep.get("id") == endpoint_id:
+                return ep
+    except Exception:
+        pass
+    return None
+
+
+def _build_agent_fn(model_endpoint_id: str | None):
+    """Build an agent_fn callable that calls the configured model.
+
+    Returns None if no endpoint is configured (runner will skip execution).
+    Returns a callable that sends the task to the model API and records
+    the response in the trace.
+    """
+    if not model_endpoint_id:
+        return None
+
+    endpoint = _load_endpoint_config(model_endpoint_id)
+    if not endpoint:
+        return None
+
+    import os
+    import urllib.request
+
+    provider = endpoint.get("provider", "")
+    model = endpoint.get("model", "")
+    base_url = endpoint.get("base_url", "")
+
+    # Resolve URL
+    if not base_url:
+        if provider in ("lm_studio", "openai_compatible"):
+            base_url = "http://localhost:1234/v1"
+        elif provider == "openai":
+            base_url = "https://api.openai.com/v1"
+        elif provider == "anthropic":
+            base_url = "https://api.anthropic.com/v1"
+        else:
+            return None
+    else:
+        base_url = base_url.rstrip("/")
+        if provider != "anthropic" and not base_url.endswith("/v1"):
+            base_url = f"{base_url}/v1"
+
+    # Resolve API key
+    api_key_env = endpoint.get("api_key_env")
+    api_key = ""
+    if api_key_env:
+        api_key = os.getenv(api_key_env, "")
+    if not api_key and provider in ("lm_studio", "openai_compatible"):
+        api_key = "lm-studio"
+
+    def agent_fn(task: str, env, trace):
+        """Send the task to the model and record the response."""
+        from sentinel.models import Error, ErrorSeverity, Step, StepAction
+
+        headers = {
+            "Content-Type": "application/json",
+        }
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": task}],
+            "max_tokens": 1024,
+        }
+
+        try:
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                f"{base_url}/chat/completions",
+                data=data,
+                headers=headers,
+                method="POST",
+            )
+            resp = urllib.request.urlopen(req, timeout=60)
+            result = json.loads(resp.read())
+
+            # Extract the response content
+            content = ""
+            choices = result.get("choices", [])
+            if choices:
+                msg = choices[0].get("message", {})
+                content = msg.get("content", "") or msg.get("reasoning_content", "")
+
+            # Record a step with the model call
+            from sentinel.models import Step, StepAction
+            step = Step(
+                step_id=trace.total_steps + 1,
+                action=StepAction.RESPOND,
+                input=task,
+                output=content,
+                duration_ms=0,
+                tool_calls=[],
+            )
+            trace.add_step(step)
+
+        except Exception as exc:
+            trace.add_error(Error(
+                message=f"Model call failed: {exc}",
+                severity=ErrorSeverity.HIGH,
+                recoverable=True,
+            ))
+
+    return agent_fn
+
+
+def _execute_in_thread(state: RunState, scenario: SentinelScenario, agent_fn=None) -> None:
     """Blocking scenario execution — runs inside the thread pool.
 
     This function must NOT use ``await``; it operates synchronously
@@ -255,8 +381,7 @@ def _execute_in_thread(state: RunState, scenario: SentinelScenario) -> None:
     runner = ScenarioRunner()
 
     try:
-        # Run without an agent_fn — the runner handles None gracefully
-        result = runner.run(scenario, agent_fn=None)
+        result = runner.run(scenario, agent_fn=agent_fn)
         state.result = result
         state.status = "completed" if result.passed else "failed"
     except Exception as exc:

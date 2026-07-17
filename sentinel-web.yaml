@@ -1,0 +1,6 @@
+endpoints:
+- api_key_env: null
+  base_url: http://192.168.1.107:1234
+  id: lm-studio-google-gemma-4-12b
+  model: google/gemma-4-12b
+  provider: lm_studio

@@ -211,3 +211,112 @@ class TestStaticFiles:
     def test_js_served(self, client: TestClient) -> None:
         resp = client.get("/js/app.js")
         assert resp.status_code in (200, 404)
+
+
+# ──────────────────────────────────────────────────────
+# Model Endpoints API
+# ──────────────────────────────────────────────────────
+
+
+class TestModelEndpointsAPI:
+    """Tests for the model endpoints API."""
+
+    @pytest.fixture(autouse=True)
+    def setup_temp_config(self, tmp_path: Path) -> None:
+        """Isolate endpoint tests using a temp config file."""
+        self.temp_file = tmp_path / "sentinel-web.yaml"
+        # Patch the configuration file path in the models module
+        with patch("sentinel.web.api.models._CONFIG_FILE", self.temp_file):
+            yield
+
+    def test_list_endpoints_empty(self, client: TestClient) -> None:
+        resp = client.get("/api/model-endpoints")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["endpoints"] == []
+        assert data["total"] == 0
+
+    def test_add_endpoint(self, client: TestClient) -> None:
+        payload = {
+            "provider": "lm_studio",
+            "model": "google/gemma-4-12b",
+            "base_url": "http://192.168.1.107:1234",
+            "api_key_env": "LMS_API_KEY",
+        }
+        resp = client.post("/api/model-endpoints", json=payload)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["provider"] == "lm_studio"
+        assert data["model"] == "google/gemma-4-12b"
+        assert data["base_url"] == "http://192.168.1.107:1234"
+        assert data["api_key_env"] == "LMS_API_KEY"
+        assert "id" in data
+
+        # Check list again
+        list_resp = client.get("/api/model-endpoints")
+        assert list_resp.status_code == 200
+        list_data = list_resp.json()
+        assert list_data["total"] == 1
+        assert list_data["endpoints"][0]["id"] == data["id"]
+
+    def test_delete_endpoint(self, client: TestClient) -> None:
+        payload = {
+            "provider": "openai",
+            "model": "gpt-4",
+        }
+        resp = client.post("/api/model-endpoints", json=payload)
+        endpoint_id = resp.json()["id"]
+
+        # Delete it
+        del_resp = client.delete(f"/api/model-endpoints/{endpoint_id}")
+        assert del_resp.status_code == 204
+
+        # Check list is empty
+        list_resp = client.get("/api/model-endpoints")
+        assert list_resp.json()["total"] == 0
+
+    def test_delete_nonexistent_endpoint(self, client: TestClient) -> None:
+        resp = client.delete("/api/model-endpoints/nonexistent-id")
+        assert resp.status_code == 404
+
+    @patch("httpx.AsyncClient.post")
+    def test_test_endpoint_success(self, mock_post, client: TestClient) -> None:
+        # Mock response from model
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        # Add endpoint
+        payload = {
+            "provider": "lm_studio",
+            "model": "google/gemma-4-12b",
+            "base_url": "http://192.168.1.107:1234",
+        }
+        add_resp = client.post("/api/model-endpoints", json=payload)
+        endpoint_id = add_resp.json()["id"]
+
+        # Test connection
+        test_resp = client.post(f"/api/model-endpoints/{endpoint_id}/test")
+        assert test_resp.status_code == 200
+        assert test_resp.json()["success"] is True
+        assert "Connection successful" in test_resp.json()["message"]
+
+    @patch("httpx.AsyncClient.post")
+    def test_test_endpoint_failure(self, mock_post, client: TestClient) -> None:
+        # Mock failure response
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_post.return_value = mock_response
+
+        payload = {
+            "provider": "openai",
+            "model": "gpt-4",
+        }
+        add_resp = client.post("/api/model-endpoints", json=payload)
+        endpoint_id = add_resp.json()["id"]
+
+        test_resp = client.post(f"/api/model-endpoints/{endpoint_id}/test")
+        assert test_resp.status_code == 200
+        assert test_resp.json()["success"] is False
+        assert "500" in test_resp.json()["message"]

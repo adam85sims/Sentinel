@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from sentinel.web.api.baselines import router as baselines_router
+from sentinel.web.api.models import router as models_router
 from sentinel.web.api.runs import router as runs_router
 from sentinel.web.api.scenarios import router as scenarios_router
 
@@ -66,6 +67,7 @@ def create_app(scenario_dir: str = "examples") -> FastAPI:
     app.include_router(scenarios_router)
     app.include_router(runs_router)
     app.include_router(baselines_router)
+    app.include_router(models_router)
 
     # ── Health check ──
     @app.get("/api/health")

@@ -2,7 +2,7 @@
  * Sentinel API Client
  * Auto-detects base URL from window.location
  */
-class SentinelAPI {
+class _SentinelAPI {
   constructor() {
     this.baseUrl = window.location.origin;
   }
@@ -50,7 +50,9 @@ class SentinelAPI {
   // Model Endpoints
   getModelEndpoints()           { return this._request('GET', '/api/model-endpoints'); }
   addModelEndpoint(config)      { return this._request('POST', '/api/model-endpoints', config); }
+  deleteModelEndpoint(id)       { return this._request('DELETE', `/api/model-endpoints/${id}`); }
   testModelEndpoint(id)         { return this._request('POST', `/api/model-endpoints/${id}/test`); }
 }
 
-window.SentinelAPI = new SentinelAPI();
+var SentinelAPI = new _SentinelAPI();
+window.SentinelAPI = SentinelAPI;

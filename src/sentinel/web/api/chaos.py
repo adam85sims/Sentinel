@@ -10,7 +10,6 @@ from typing import Any
 
 import yaml
 from fastapi import APIRouter
-
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/chaos", tags=["chaos"])

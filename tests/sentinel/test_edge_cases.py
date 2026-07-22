@@ -119,7 +119,6 @@ class TestBoundaryConditions:
     def test_many_tool_calls(self):
         """Recording 1000 tool calls should work."""
         trace = AgentTrace()
-        mock = MockTool("t", response="ok")
 
         for i in range(1000):
             tc = ToolCall(tool_name="t", arguments={"i": i}, result="ok")

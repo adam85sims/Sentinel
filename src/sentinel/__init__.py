@@ -134,6 +134,7 @@ __all__ = [
     "SpecDrift",
     "DegradationStrategy",
     "DriftIntensity",
+    "inject_failures",
     # Chaos Presets
     "PRESETS",
     "load_preset",

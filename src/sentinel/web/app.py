@@ -10,6 +10,7 @@ Creates and configures the FastAPI app with:
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -19,18 +20,58 @@ from fastapi.staticfiles import StaticFiles
 
 from sentinel.web.api.baselines import router as baselines_router
 from sentinel.web.api.chaos import router as chaos_router
+from sentinel.web.api.governance import router as governance_router
 from sentinel.web.api.models import router as models_router
 from sentinel.web.api.reports import router as reports_router
 from sentinel.web.api.runs import router as runs_router
 from sentinel.web.api.scenario_editor import router as scenario_editor_router
 from sentinel.web.api.scenarios import router as scenarios_router
-from sentinel.web.api.governance import router as governance_router
+
+logger = logging.getLogger(__name__)
 
 # Resolve paths relative to this file.
 # This file lives at src/sentinel/web/app.py, so the static dir is
 # one level up in the web package.
 _WEB_DIR = Path(__file__).resolve().parent
 _STATIC_DIR = _WEB_DIR / "static"
+_PROJECT_ROOT = _WEB_DIR.parent.parent.parent
+_CONFIG_FILE = _PROJECT_ROOT / "sentinel-web.yaml"
+
+# Default CORS origins when no config file exists.
+_DEFAULT_CORS_ORIGINS = ["*"]
+
+
+def _get_version() -> str:
+    """Read the version from sentinel.__version__."""
+    import importlib
+
+    try:
+        mod = importlib.import_module("sentinel")
+        return getattr(mod, "__version__", "0.0.0")
+    except Exception:
+        return "0.0.0"
+
+
+def _load_cors_origins() -> list[str]:
+    """Load CORS allowed origins from sentinel-web.yaml.
+
+    Returns the ``web.cors_origins`` list from the config file, or
+    ``_DEFAULT_CORS_ORIGINS`` if the file doesn't exist or has no
+    CORS configuration.
+    """
+    if not _CONFIG_FILE.exists():
+        return _DEFAULT_CORS_ORIGINS
+    try:
+        import yaml
+
+        with open(_CONFIG_FILE, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        origins = data.get("web", {}).get("cors_origins")
+        if isinstance(origins, list) and origins:
+            return [str(o) for o in origins]
+    except Exception:
+        logger.debug("Failed to load CORS config from %s", _CONFIG_FILE, exc_info=True)
+    return _DEFAULT_CORS_ORIGINS
 
 
 def create_app(scenario_dir: str = "examples") -> FastAPI:
@@ -44,10 +85,11 @@ def create_app(scenario_dir: str = "examples") -> FastAPI:
     Returns:
         A fully configured FastAPI instance ready to serve.
     """
+    version = _get_version()
     app = FastAPI(
         title="Sentinel WebUI",
         description="Agent Behavioral Testing Platform — Web Dashboard",
-        version="0.2.0",
+        version=version,
         docs_url="/api/docs",
         redoc_url="/api/redoc",
     )
@@ -55,11 +97,11 @@ def create_app(scenario_dir: str = "examples") -> FastAPI:
     # ── Store config on app.state ──
     app.state.scenario_dir = scenario_dir
 
-    # ── CORS — allow all origins for local dev ──
-    # In production this would be tightened to specific origins.
+    # ── CORS — configurable via sentinel-web.yaml ──
+    cors_origins = _load_cors_origins()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -81,7 +123,7 @@ def create_app(scenario_dir: str = "examples") -> FastAPI:
     @app.get("/api/health")
     async def health_check():
         """Simple health check endpoint for load balancers and monitoring."""
-        return {"status": "ok", "version": "0.2.0"}
+        return {"status": "ok", "version": version}
 
     # ── Root route → SPA index.html ──
     @app.get("/", response_class=HTMLResponse)
@@ -110,7 +152,6 @@ def create_app(scenario_dir: str = "examples") -> FastAPI:
     # Mount LAST so API routes take precedence over static file matching.
     if _STATIC_DIR.exists():
         from starlette.middleware.base import BaseHTTPMiddleware
-        from starlette.responses import Response
 
         # Disable caching in development so the browser always fetches fresh JS/CSS.
         # In production, this should be enabled for performance.

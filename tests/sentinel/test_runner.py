@@ -200,8 +200,6 @@ class TestScenarioRunner:
 
     def test_run_batch(self):
         """run_batch executes multiple scenarios."""
-        env = EnvironmentBuilder().mock_tool("search", response="ok").build()
-
         scenarios = [
             SentinelScenario(id=f"batch-{i}", name=f"Batch {i}", task="task")
             for i in range(3)

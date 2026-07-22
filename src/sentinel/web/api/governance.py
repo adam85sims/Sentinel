@@ -10,7 +10,6 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -23,7 +22,7 @@ _GOV_REPORTS_DIR = _PROJECT_ROOT / "governance" / "reports"
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from governance.audit import run_audit
+from governance.audit import run_audit  # noqa: E402 — sys.path must be set first
 
 router = APIRouter(prefix="/api/governance", tags=["governance"])
 

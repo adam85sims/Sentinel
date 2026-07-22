@@ -1,3 +1,7 @@
+web:
+  cors_origins:
+    - "*"  # Default: allow all origins for local dev
+
 endpoints:
 - api_key_env: null
   base_url: http://192.168.1.107:1234

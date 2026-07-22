@@ -33,7 +33,7 @@ def _load_endpoints() -> list[dict[str, Any]]:
     if not _CONFIG_FILE.exists():
         return []
     try:
-        with open(_CONFIG_FILE, "r", encoding="utf-8") as f:
+        with open(_CONFIG_FILE, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
             return data.get("endpoints", [])
     except Exception:
@@ -45,7 +45,7 @@ def _save_endpoints(endpoints: list[dict[str, Any]]) -> None:
     try:
         data = {}
         if _CONFIG_FILE.exists():
-            with open(_CONFIG_FILE, "r", encoding="utf-8") as f:
+            with open(_CONFIG_FILE, encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
         data["endpoints"] = endpoints
         with open(_CONFIG_FILE, "w", encoding="utf-8") as f:

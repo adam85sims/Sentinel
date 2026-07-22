@@ -3,6 +3,10 @@
 Provides save/load/delete for RunState objects so the web UI can
 restore run history across server restarts. Each run is stored as
 an individual JSON file in ``.sentinel/runs/`` under the project root.
+
+Cleanup is automatic on startup via ``cleanup_old_runs()``. Runs are
+retained for ``RUN_TTL_DAYS`` days (default 30) and capped at
+``MAX_RUNS`` total (default 500).  Both values can be overridden.
 """
 
 from __future__ import annotations
@@ -10,7 +14,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import asdict, is_dataclass
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -21,6 +25,12 @@ logger = logging.getLogger(__name__)
 # (5 levels up from this file)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
 RUNS_DIR = _PROJECT_ROOT / ".sentinel" / "runs"
+
+# ── Cleanup configuration ──
+# Maximum number of persisted run files to keep on disk.
+MAX_RUNS = 500
+# How long to retain completed run files (in days).
+RUN_TTL_DAYS = 30
 
 
 def _json_default(obj: Any) -> Any:
@@ -213,6 +223,54 @@ def delete_run(run_id: str) -> bool:
     except Exception:
         logger.warning("Failed to delete run file %s", path, exc_info=True)
         return False
+
+
+def cleanup_old_runs(
+    max_runs: int = MAX_RUNS,
+    ttl_days: int = RUN_TTL_DAYS,
+) -> int:
+    """Remove old run files to enforce TTL and max-count limits.
+
+    Runs twice: first by TTL (delete files older than ``ttl_days``),
+    then by count (keep only the newest ``max_runs`` files).
+
+    Returns the total number of files deleted.
+    """
+    if not RUNS_DIR.exists():
+        return 0
+
+    deleted = 0
+
+    # 1. TTL cleanup — delete files older than ttl_days
+    if ttl_days > 0:
+        cutoff = datetime.now(UTC) - timedelta(days=ttl_days)
+        for path in RUNS_DIR.glob("*.json"):
+            try:
+                mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+                if mtime < cutoff:
+                    path.unlink()
+                    deleted += 1
+            except Exception:
+                logger.warning("Failed to check/delete run file %s", path, exc_info=True)
+
+    # 2. Count cleanup — keep only the newest max_runs files
+    if max_runs > 0:
+        remaining = sorted(
+            RUNS_DIR.glob("*.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        for path in remaining[max_runs:]:
+            try:
+                path.unlink()
+                deleted += 1
+            except Exception:
+                logger.warning("Failed to delete old run file %s", path, exc_info=True)
+
+    if deleted:
+        logger.info("Cleaned up %d old run file(s) from %s", deleted, RUNS_DIR)
+
+    return deleted
 
 
 def _safe_serialize(obj: Any) -> Any:

@@ -1,6 +1,5 @@
 """Tests for Phase 8: OpenTelemetry export, baseline storage, diff CLI."""
 
-import json
 import time
 
 import pytest
@@ -262,6 +261,7 @@ class TestBaselineStorage:
         checking for key presence does not exercise detection at all.
         """
         import re
+
         from sentinel.cli import _detect_git_info
 
         sha, branch = _detect_git_info()

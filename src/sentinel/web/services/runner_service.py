@@ -17,14 +17,16 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 import uuid
-from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
 import yaml
+
 from sentinel.runner import ScenarioRunner, SentinelResult, SentinelScenario
 from sentinel.web.services import persistence
 
@@ -66,10 +68,17 @@ class RunManager:
     """Registry of active and recent runs with disk persistence.
 
     On startup, previously-completed runs are loaded from disk so the
-    UI can display run history across server restarts.
+    UI can display run history across server restarts.  Old runs are
+    automatically cleaned up based on TTL and max-count limits.
+
+    A ``threading.Lock`` guards ``_runs`` so that concurrent access
+    from the async event loop and the ``ThreadPoolExecutor`` threads
+    is safe.
     """
     def __init__(self) -> None:
+        self._lock = threading.Lock()
         self._runs: dict[str, RunState] = {}
+        persistence.cleanup_old_runs()
         self._load_from_disk()
 
     def _load_from_disk(self) -> None:
@@ -79,15 +88,12 @@ class RunManager:
             run_id = data.get("run_id", "")
             if not run_id:
                 continue
-            # Reconstruct a RunState with status/timing/scenario info
-            # but result=None (caller can use load_run_result for full data)
             state = RunState(
                 run_id=run_id,
                 scenario_id=data.get("scenario_id", ""),
                 scenario_name=data.get("scenario_name", ""),
                 status=data.get("status", "completed"),
             )
-            # Parse ISO timestamps back to datetime
             started = data.get("started_at")
             completed = data.get("completed_at")
             if started:
@@ -112,11 +118,13 @@ class RunManager:
             status="queued",
             started_at=datetime.now(UTC),
         )
-        self._runs[run_id] = state
+        with self._lock:
+            self._runs[run_id] = state
         return state
 
     def get(self, run_id: str) -> RunState | None:
-        return self._runs.get(run_id)
+        with self._lock:
+            return self._runs.get(run_id)
 
     def load_run_result(self, run_id: str) -> dict[str, Any] | None:
         """Read the full persisted result data for a completed run."""
@@ -124,16 +132,18 @@ class RunManager:
 
     def list_runs(self) -> list[RunState]:
         """Return all runs, newest started_at first."""
-        return sorted(
-            self._runs.values(),
-            key=lambda r: r.started_at or datetime.min.replace(tzinfo=UTC),
-            reverse=True,
-        )
+        with self._lock:
+            return sorted(
+                self._runs.values(),
+                key=lambda r: r.started_at or datetime.min.replace(tzinfo=UTC),
+                reverse=True,
+            )
 
     def update_status(self, run_id: str, status: str) -> None:
-        state = self._runs.get(run_id)
-        if state:
-            state.status = status
+        with self._lock:
+            state = self._runs.get(run_id)
+            if state:
+                state.status = status
 
 
 # Module-level singleton so all routers share the same run store.
@@ -300,7 +310,7 @@ def _load_endpoint_config(endpoint_id: str) -> dict[str, Any] | None:
         return None
     try:
         import yaml
-        with open(_CONFIG_FILE, "r", encoding="utf-8") as f:
+        with open(_CONFIG_FILE, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         for ep in data.get("endpoints", []):
             if ep.get("id") == endpoint_id:

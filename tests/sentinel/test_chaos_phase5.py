@@ -130,7 +130,7 @@ class TestContextDegradation:
         assert levels[0] == 0.0
         # Level should increase non-linearly (quadratic)
         # Check that early diffs are non-zero and increasing
-        post_start = [l for l in levels if l > 0]
+        post_start = [level for level in levels if level > 0]
         assert len(post_start) >= 5, "Need enough steps to see acceleration"
         # First few diffs should be increasing (quadratic region)
         diffs = [post_start[i+1] - post_start[i] for i in range(min(3, len(post_start)-1))]
@@ -347,8 +347,8 @@ class TestCascadingFailures:
             seed=42,
         )
         event = {"tool_name": "database", "error_type": "timeout"}
-        results1 = cascade.on_failure(event, current_step=1)
-        results2 = cascade.on_failure(event, current_step=5)
+        cascade.on_failure(event, current_step=1)
+        cascade.on_failure(event, current_step=5)
 
         # Both should be part of the same chain
         # Second call should continue from where the first left off

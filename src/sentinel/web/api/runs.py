@@ -7,10 +7,12 @@ endpoint streams real-time progress to connected clients.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from sse_starlette.sse import EventSourceResponse
 
 from sentinel.web.schemas.run import (
+    BatchRunRequest,
+    BatchRunResponse,
     RunDetailResponse,
     RunListResponse,
     RunRequest,
@@ -28,7 +30,7 @@ router = APIRouter(prefix="/api/runs", tags=["runs"])
 
 
 @router.post("", response_model=RunResponse, status_code=202)
-async def start_run(request: RunRequest) -> RunResponse:
+async def start_run(request: RunRequest, api_request: Request) -> RunResponse:
     """Start a new scenario run.
 
     Accepts a ``scenario_id`` and optional ``model_endpoint``.
@@ -38,11 +40,12 @@ async def start_run(request: RunRequest) -> RunResponse:
     # Register an SSE event queue for this run
     # (we don't know the run_id yet — run_scenario creates it,
     #  so we pre-create with a placeholder and let the service fill it)
+    dir_to_use = getattr(api_request.app.state, "scenario_dir", None)
     try:
         state = await run_scenario(
             scenario_id=request.scenario_id,
             manager=run_manager,
-            scenario_dir=None,  # use default
+            scenario_dir=dir_to_use,
             model_endpoint_id=request.model_endpoint,
         )
     except ValueError as exc:
@@ -68,6 +71,53 @@ async def start_run(request: RunRequest) -> RunResponse:
         scenario_id=state.scenario_id,
         scenario_name=state.scenario_name,
         started_at=state.started_at,
+    )
+
+
+@router.post("/batch", response_model=BatchRunResponse, status_code=202)
+async def start_batch_runs(request: BatchRunRequest, api_request: Request) -> BatchRunResponse:
+    """Start multiple scenario runs in sequence.
+
+    Accepts a list of scenario IDs and runs them one after another.
+    Returns the list of run IDs created.
+    """
+    from sentinel.web.services.runner_service import discover_scenarios
+
+    dir_to_use = getattr(api_request.app.state, "scenario_dir", None)
+
+    # If a tag is provided, filter scenarios by tag
+    scenario_ids = request.scenario_ids or []
+    if request.tag:
+        all_scenarios = discover_scenarios(dir_to_use)
+        tagged = [s["id"] for s in all_scenarios if request.tag in s.get("tags", [])]
+        scenario_ids = tagged
+
+    if not scenario_ids:
+        raise HTTPException(status_code=400, detail="No scenarios specified or found for the given tag")
+
+    run_ids = []
+    for sid in scenario_ids[:request.max_runs]:  # Cap at max_runs
+        try:
+            state = await run_scenario(
+                scenario_id=sid,
+                manager=run_manager,
+                scenario_dir=dir_to_use,
+                model_endpoint_id=request.model_endpoint,
+            )
+            register_run(state.run_id)
+            publish_run_event(state.run_id, "started", {
+                "run_id": state.run_id,
+                "scenario_id": sid,
+                "scenario_name": state.scenario_name,
+            })
+            run_ids.append(state.run_id)
+        except (ValueError, Exception):
+            continue  # Skip scenarios that fail to start
+
+    return BatchRunResponse(
+        run_ids=run_ids,
+        total_started=len(run_ids),
+        total_requested=len(scenario_ids),
     )
 
 

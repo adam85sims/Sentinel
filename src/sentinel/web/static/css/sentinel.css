@@ -2,6 +2,228 @@
    SENTINEL — Dark Theme Stylesheet
    ============================================================ */
 
+.trend-chart-wrapper {
+  padding: 1rem 0.5rem 0.5rem;
+}
+
+.trend-chart-wrapper svg {
+  display: block;
+}
+
+.trend-y-label {
+  fill: var(--fg-subtle);
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.trend-gridline {
+  stroke: var(--border-light);
+  stroke-width: 0.5;
+  stroke-dasharray: 3 3;
+}
+
+.trend-final-label {
+  fill: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.trend-bar {
+  transition: opacity var(--transition-fast);
+}
+
+.trend-bar:hover {
+  opacity: 0.7 !important;
+}
+
+/* ============================================================
+   SENTINEL — Scenario Editor
+   ============================================================ */
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  min-height: 400px;
+}
+
+@media (max-width: 900px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.editor-pane {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.editor-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.editor-textarea {
+  width: 100%;
+  min-height: 350px;
+  padding: 0.75rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: none;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  tab-size: 2;
+}
+
+.editor-textarea:focus {
+  outline: none;
+}
+
+.editor-preview {
+  padding: 0.75rem;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.editor-error {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--fail-bg);
+  border: 1px solid var(--fail);
+  border-radius: var(--radius);
+  color: var(--fail);
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   SENTINEL — Chaos Builder
+   ============================================================ */
+
+.chaos-section {
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.chaos-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.chaos-section-body {
+  padding: 0.75rem;
+}
+
+.chaos-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.chaos-slider-row label {
+  flex: 0 0 120px;
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+}
+
+.chaos-slider-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.chaos-slider-row .slider-value {
+  flex: 0 0 50px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.yaml-preview-box {
+  padding: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--fg-muted);
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   SENTINEL — Governance
+   ============================================================ */
+
+.gov-scorecard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.gov-score-card {
+  padding: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.gov-score-card .score-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.gov-score-card .score-label {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  margin-top: 0.25rem;
+}
+
+.finding-item {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.finding-icon {
+  flex: 0 0 20px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.finding-text {
+  flex: 1;
+  font-size: 0.85rem;
+}
+
 /* ---------- Custom Properties ---------- */
 :root {
   --bg: #0d1117;
@@ -35,6 +257,31 @@
   --transition-fast: 0.15s ease;
   --transition: 0.2s ease;
   --transition-slow: 0.3s ease;
+}
+
+/* ---------- Light Mode ---------- */
+[data-theme="light"] {
+  --bg: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eaeef2;
+  --fg: #1f2328;
+  --fg-muted: #656d76;
+  --fg-subtle: #8b949e;
+  --accent: #0969da;
+  --accent-hover: #0550ae;
+  --accent-muted: rgba(9, 105, 218, 0.1);
+  --pass: #1a7f37;
+  --pass-bg: rgba(26, 127, 55, 0.1);
+  --fail: #cf222e;
+  --fail-bg: rgba(207, 34, 46, 0.1);
+  --warn: #9a6700;
+  --warn-bg: rgba(154, 103, 0, 0.1);
+  --card: #ffffff;
+  --card-hover: #f6f8fa;
+  --border: #d0d7de;
+  --border-light: #eaeef2;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* ---------- Reset & Base ---------- */

@@ -25,6 +25,12 @@ async function loadScenarios() {
     const data = await SentinelAPI.getScenarios();
     const scenarios = Array.isArray(data) ? data : (data.scenarios || []);
 
+    let endpoints = [];
+    try {
+      const epData = await SentinelAPI.getModelEndpoints();
+      endpoints = epData.endpoints || [];
+    } catch (_) { /* no endpoints configured */ }
+
     document.getElementById('scenarios-loading').classList.add('hidden');
     const sc = document.getElementById('scenarios-content');
     sc.classList.remove('hidden');
@@ -41,10 +47,48 @@ async function loadScenarios() {
     }
 
     sc.innerHTML = `
-      <div class="card-grid">
+      <div class="flex items-center justify-between mb-lg" style="flex-wrap:wrap; gap:0.5rem;">
+        <div class="flex gap-sm" id="tag-filters"></div>
+        <div class="flex gap-sm">
+          <button class="btn btn-ghost btn-sm" onclick="runAllScenarios()">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h4v4H2V2zm6 0h4v4H8V2zm-6 6h4v4H2V8zm6 0h4v4H8V8z" opacity=".7"/></svg>
+            Run All
+          </button>
+          <a href="#/scenarios/__new__" class="btn btn-primary btn-sm">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/></svg>
+            New Scenario
+          </a>
+        </div>
+      </div>
+      <div class="card-grid" id="scenario-grid">
         ${scenarios.map(s => renderScenarioCard(s)).join('')}
       </div>
     `;
+
+    // Build tag filter chips
+    const allTags = new Set();
+    scenarios.forEach(s => (s.tags || []).forEach(t => allTags.add(t)));
+    if (allTags.size > 0) {
+      const tagFiltersEl = document.getElementById('tag-filters');
+      tagFiltersEl.innerHTML = `<button class="btn btn-primary btn-sm tag-filter active" data-tag="all">All</button>` +
+        [...allTags].sort().map(t =>
+          `<button class="btn btn-ghost btn-sm tag-filter" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`
+        ).join('');
+
+      tagFiltersEl.querySelectorAll('.tag-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tag = btn.dataset.tag;
+          tagFiltersEl.querySelectorAll('.tag-filter').forEach(b => {
+            b.classList.toggle('btn-primary', b.dataset.tag === tag);
+            b.classList.toggle('btn-ghost', b.dataset.tag !== tag);
+          });
+          const grid = document.getElementById('scenario-grid');
+          grid.innerHTML = scenarios
+            .filter(s => tag === 'all' || (s.tags || []).includes(tag))
+            .map(s => renderScenarioCard(s)).join('');
+        });
+      });
+    }
   } catch (err) {
     document.getElementById('scenarios-loading').classList.add('hidden');
     document.getElementById('scenarios-content').classList.remove('hidden');
@@ -57,7 +101,7 @@ async function loadScenarios() {
   }
 }
 
-function renderScenarioCard(s) {
+function renderScenarioCard(s, endpoints) {
   const id = s.id || s.name || s.scenario_id;
   const name = s.name || s.scenario_name || id;
   const desc = s.description || s.desc || '';
@@ -81,10 +125,16 @@ function renderScenarioCard(s) {
       ` : ''}
       <div class="card-footer">
         <span class="text-xs text-subtle">${escapeHtml(String(id))}</span>
-        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); runScenario('${escapeHtml(id)}')">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>
-          Run
-        </button>
+        <div class="flex items-center gap-sm" onclick="event.stopPropagation();">
+          <select class="form-select form-select-sm" id="run-endpoint-${escapeHtml(id)}" style="max-width:140px; font-size:0.75rem;">
+            <option value="">Mock Agent</option>
+            ${(endpoints || []).map(ep => `<option value="${escapeHtml(ep.id)}">${escapeHtml(ep.provider.toUpperCase())} — ${escapeHtml(ep.model)}</option>`).join('')}
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="runScenarioWithEndpoint('${escapeHtml(id)}')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>
+            Run
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -95,6 +145,21 @@ async function runScenario(scenarioId) {
     appendToLog({ level: 'info', message: `Starting run for scenario: ${scenarioId}` });
     const result = await SentinelAPI.startRun(scenarioId);
     const runId = result.run_id || result.id || result.run_id;
+    appendToLog({ level: 'success', message: `Run started: ${runId}` });
+    window.SentinelRouter.navigate(`#/runs/${runId}`);
+  } catch (err) {
+    appendToLog({ level: 'error', message: `Failed to start run: ${err.message}` });
+    alert('Failed to start run: ' + err.message);
+  }
+}
+
+async function runScenarioWithEndpoint(scenarioId) {
+  const sel = document.getElementById('run-endpoint-' + scenarioId) || document.getElementById('run-model-endpoint');
+  const endpointId = sel ? sel.value : null;
+  try {
+    appendToLog({ level: 'info', message: `Starting run for scenario: ${scenarioId}` + (endpointId ? ` with ${endpointId}` : '') });
+    const result = await SentinelAPI.startRun(scenarioId, endpointId || undefined);
+    const runId = result.run_id || result.id;
     appendToLog({ level: 'success', message: `Run started: ${runId}` });
     window.SentinelRouter.navigate(`#/runs/${runId}`);
   } catch (err) {
@@ -123,6 +188,13 @@ function renderScenarioDetail(id) {
 async function loadScenarioDetail(id) {
   try {
     const s = await SentinelAPI.getScenario(id);
+
+    let endpoints = [];
+    try {
+      const epData = await SentinelAPI.getModelEndpoints();
+      endpoints = epData.endpoints || [];
+    } catch (_) { /* no endpoints configured */ }
+
     document.getElementById('scenario-detail-loading').classList.add('hidden');
     const dc = document.getElementById('scenario-detail-content');
     dc.classList.remove('hidden');
@@ -146,10 +218,20 @@ async function loadScenarioDetail(id) {
             </div>
           ` : ''}
         </div>
-        <button class="btn btn-primary" onclick="runScenario('${escapeHtml(id)}')">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>
-          Run Scenario
-        </button>
+        <div class="flex items-center gap-sm">
+          <a href="#/scenarios/${encodeURIComponent(id)}/edit" class="btn btn-ghost btn-sm">Edit</a>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label text-sm" style="margin-bottom:2px;">Model Endpoint</label>
+            <select class="form-select" id="run-model-endpoint" style="min-width:180px;">
+              <option value="">Mock Agent (no model)</option>
+              ${endpoints.map(ep => `<option value="${escapeHtml(ep.id)}">${escapeHtml(ep.provider.toUpperCase())} — ${escapeHtml(ep.model)}</option>`).join('')}
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="runScenarioWithEndpoint('${escapeHtml(id)}')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>
+            Run Scenario
+          </button>
+        </div>
       </div>
 
       ${task ? `
@@ -200,3 +282,18 @@ async function loadScenarioDetail(id) {
 window.renderScenarios = renderScenarios;
 window.renderScenarioDetail = renderScenarioDetail;
 window.runScenario = runScenario;
+window.runScenarioWithEndpoint = runScenarioWithEndpoint;
+
+async function runAllScenarios() {
+  try {
+    appendToLog({ level: 'info', message: 'Starting batch run of all scenarios…' });
+    const result = await SentinelAPI.startBatchRuns({ max_runs: 20 });
+    appendToLog({ level: 'success', message: `Batch started: ${result.total_started} runs` });
+    window.SentinelRouter.navigate('#/runs');
+  } catch (err) {
+    appendToLog({ level: 'error', message: `Batch run failed: ${err.message}` });
+    alert('Failed to start batch run: ' + err.message);
+  }
+}
+
+window.runAllScenarios = runAllScenarios;

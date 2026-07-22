@@ -1,0 +1,212 @@
+{
+  "run_id": "abaa5057-8e1",
+  "scenario_id": "cascade-db-api-ui",
+  "scenario_name": "Cascading Database Failure",
+  "status": "pass",
+  "started_at": "2026-07-22T11:08:14.737770+00:00",
+  "completed_at": "2026-07-22T11:08:14.737770+00:00",
+  "result": {
+    "scenario_id": "cascade-db-api-ui",
+    "scenario_name": "Cascading Database Failure",
+    "passed": true,
+    "duration_ms": 0.0,
+    "error": null,
+    "timestamp": 1784718494.7377706,
+    "assertion_results": [
+      {
+        "assertion_name": "tool_fallback_used",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 1.2
+      },
+      {
+        "assertion_name": "graceful_degradation",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.8
+      },
+      {
+        "assertion_name": "error_handling",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.5
+      },
+      {
+        "assertion_name": "response_quality",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.3
+      }
+    ],
+    "trace": {
+      "total_steps": 5,
+      "total_tool_calls": 3,
+      "total_duration_ms": 0.0,
+      "tool_names_called": [
+        "database",
+        "api_server",
+        "user_interface"
+      ],
+      "failed_tool_calls": [
+        {
+          "tool_name": "database",
+          "arguments": {
+            "query": "user 789"
+          },
+          "result": {
+            "error": "Database connection timeout",
+            "succeeded": false
+          },
+          "duration_ms": 8012.0,
+          "error": "Database timeout",
+          "step_id": 2,
+          "timestamp": 1784718494.7377706
+        },
+        {
+          "tool_name": "api_server",
+          "arguments": {
+            "path": "/user/789/orders"
+          },
+          "result": {
+            "error": "API unavailable",
+            "succeeded": false
+          },
+          "duration_ms": 1500.0,
+          "error": "API unavailable",
+          "step_id": 3,
+          "timestamp": 1784718494.7377706
+        },
+        {
+          "tool_name": "user_interface",
+          "arguments": {
+            "view": "dashboard"
+          },
+          "result": {
+            "result": {
+              "fallback_message": "Dashboard partially loaded."
+            },
+            "succeeded": true
+          },
+          "duration_ms": 12.0,
+          "error": null,
+          "step_id": 4,
+          "timestamp": 1784718494.7377706
+        }
+      ],
+      "errors": [
+        {
+          "message": "Database connection timeout",
+          "severity": "high",
+          "step_id": 2,
+          "recoverable": true,
+          "timestamp": 1784718494.7377706
+        },
+        {
+          "message": "API unavailable: upstream dependency failed",
+          "severity": "high",
+          "step_id": 3,
+          "recoverable": true,
+          "timestamp": 1784718494.7377706
+        }
+      ],
+      "state_changes": [],
+      "steps": [
+        {
+          "step_id": 1,
+          "action": "reason",
+          "input": "Planning dashboard fetch with dependency chain",
+          "output": "Fetch DB \u2192 API \u2192 UI. Will detect failures and use fallbacks.",
+          "duration_ms": 4.8,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_id": 2,
+          "action": "tool_call",
+          "input": "database(query='user 789')",
+          "output": "{\"error\": \"Database connection timeout\", \"succeeded\": false}",
+          "duration_ms": 8012.0,
+          "tool_calls": [
+            {
+              "tool_name": "database",
+              "arguments": {
+                "query": "user 789"
+              },
+              "result": {
+                "error": "Database connection timeout",
+                "succeeded": false
+              },
+              "duration_ms": 8012.0,
+              "error": "Database timeout",
+              "step_id": 2,
+              "timestamp": 1784718494.7377706
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 3,
+          "action": "tool_call",
+          "input": "api_server(path='/user/789/orders')",
+          "output": "{\"error\": \"API unavailable\", \"succeeded\": false}",
+          "duration_ms": 1500.0,
+          "tool_calls": [
+            {
+              "tool_name": "api_server",
+              "arguments": {
+                "path": "/user/789/orders"
+              },
+              "result": {
+                "error": "API unavailable",
+                "succeeded": false
+              },
+              "duration_ms": 1500.0,
+              "error": "API unavailable",
+              "step_id": 3,
+              "timestamp": 1784718494.7377706
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 4,
+          "action": "tool_call",
+          "input": "user_interface(view='dashboard')",
+          "output": "{\"result\": {\"fallback_message\": \"Dashboard partially loaded.\"}, \"succeeded\": true}",
+          "duration_ms": 12.0,
+          "tool_calls": [
+            {
+              "tool_name": "user_interface",
+              "arguments": {
+                "view": "dashboard"
+              },
+              "result": {
+                "result": {
+                  "fallback_message": "Dashboard partially loaded."
+                },
+                "succeeded": true
+              },
+              "duration_ms": 12.0,
+              "error": null,
+              "step_id": 4,
+              "timestamp": 1784718494.7377706
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 5,
+          "action": "respond",
+          "input": "Generate partial dashboard response",
+          "output": "Dashboard partially loaded with cached profile data.",
+          "duration_ms": 2.5,
+          "tool_calls": [],
+          "error": null
+        }
+      ],
+      "metadata": {},
+      "start_time": 1784718494.7377706,
+      "end_time": 1784718494.7377706
+    }
+  }
+}

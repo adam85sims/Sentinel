@@ -1,0 +1,15 @@
+{
+  "label": "demo-v1",
+  "timestamp": 1784718959.7553024,
+  "git_sha": "",
+  "git_branch": "",
+  "tags": [
+    "demo",
+    "v1"
+  ],
+  "description": "Older demo baseline with mixed results",
+  "scenario_count": 24,
+  "pass_count": 16,
+  "fail_count": 8,
+  "metadata": {}
+}

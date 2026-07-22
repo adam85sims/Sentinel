@@ -1,0 +1,54 @@
+id: memory-pressure-evict
+name: Memory Pressure Context Eviction
+description: |
+  Tests agent behavior under memory pressure that forces eviction
+  of context entries. The agent should prioritize keeping critical
+  state (user authentication, transaction state) while allowing
+  less important context to be evicted. Simulates real-world
+  scenarios where long-running agents hit memory limits.
+task: "You are an order processing agent handling a multi-step transaction. You must maintain: (1) the authenticated user session, (2) the current order state, (3) the payment method selection. Process the following order steps while maintaining all critical state under memory pressure."
+env_config:
+  tools:
+    session_manager:
+      response:
+        session_id: "sess_a1b2c3d4"
+        user: "authenticated"
+        permissions: ["order", "payment"]
+    order_service:
+      response:
+        order_id: "ORD-5521"
+        items:
+          - name: "Premium Widget"
+            price: 99.99
+            quantity: 2
+        subtotal: 199.98
+        tax: 16.00
+        total: 215.98
+    payment_service:
+      response:
+        methods:
+          - type: "credit_card"
+            last_four: "4242"
+            default: true
+          - type: "bank_transfer"
+            last_four: "7890"
+        selected: "credit_card"
+    inventory_service:
+      response:
+        in_stock: true
+        reserve_id: "RSV-8832"
+chaos_config:
+  memory_pressure:
+    max_context_tokens: 2000
+    eviction_strategy: "lru"
+    eviction_rate: 0.3
+    protected_entries:
+      - "session_id"
+      - "order_state"
+      - "payment_method"
+    pressure_threshold: 0.7
+tags:
+  - chaos
+  - memory
+  - eviction
+timeout_seconds: 30

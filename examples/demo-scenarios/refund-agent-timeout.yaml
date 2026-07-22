@@ -1,0 +1,33 @@
+id: refund-agent-timeout
+name: Refund Agent Timeout Handling
+description: |
+  Tests whether a refund processing agent can gracefully handle
+  a search API timeout when looking up refund policies. The agent
+  should detect the timeout, use cached fallback data, and still
+  complete the refund request without failing completely.
+task: "Process a refund request for order #12345. The customer wants a full refund for a defective product. Look up the refund policy, verify the order is within the return window, and initiate the refund."
+env_config:
+  tools:
+    search:
+      side_effect: "timeout"
+      error_message: "Search API timed out after 10s"
+    cache:
+      response:
+        refund_policy: "30-day return window for defective items"
+        order_12345:
+          date: "2026-07-01"
+          amount: 49.99
+          status: "delivered"
+          product: "Wireless Mouse"
+          defect_reported: true
+chaos_config:
+  timeout:
+    target: search
+    delay_ms: 15000
+    probability: 1.0
+tags:
+  - chaos
+  - timeout
+  - refund
+  - production
+timeout_seconds: 30

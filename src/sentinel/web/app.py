@@ -18,9 +18,13 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from sentinel.web.api.baselines import router as baselines_router
+from sentinel.web.api.chaos import router as chaos_router
 from sentinel.web.api.models import router as models_router
+from sentinel.web.api.reports import router as reports_router
 from sentinel.web.api.runs import router as runs_router
+from sentinel.web.api.scenario_editor import router as scenario_editor_router
 from sentinel.web.api.scenarios import router as scenarios_router
+from sentinel.web.api.governance import router as governance_router
 
 # Resolve paths relative to this file.
 # This file lives at src/sentinel/web/app.py, so the static dir is
@@ -65,9 +69,13 @@ def create_app(scenario_dir: str = "examples") -> FastAPI:
     # Each router defines its own prefix (e.g. /api/scenarios),
     # so we include them at the root level.
     app.include_router(scenarios_router)
+    app.include_router(scenario_editor_router)
     app.include_router(runs_router)
     app.include_router(baselines_router)
     app.include_router(models_router)
+    app.include_router(chaos_router)
+    app.include_router(reports_router)
+    app.include_router(governance_router)
 
     # ── Health check ──
     @app.get("/api/health")

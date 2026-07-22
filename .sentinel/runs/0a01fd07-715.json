@@ -1,0 +1,189 @@
+{
+  "run_id": "0a01fd07-715",
+  "scenario_id": "context-degradation-long",
+  "scenario_name": "Context Degradation in Long Conversations",
+  "status": "pass",
+  "started_at": "2026-07-22T11:12:28.177748+00:00",
+  "completed_at": "2026-07-22T11:12:28.177748+00:00",
+  "result": {
+    "scenario_id": "context-degradation-long",
+    "scenario_name": "Context Degradation in Long Conversations",
+    "passed": true,
+    "duration_ms": 0.0,
+    "error": null,
+    "timestamp": 1784718748.1777484,
+    "assertion_results": [
+      {
+        "assertion_name": "tool_fallback_used",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 1.2
+      },
+      {
+        "assertion_name": "graceful_degradation",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.8
+      },
+      {
+        "assertion_name": "error_handling",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.5
+      },
+      {
+        "assertion_name": "response_quality",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.3
+      }
+    ],
+    "trace": {
+      "total_steps": 5,
+      "total_tool_calls": 2,
+      "total_duration_ms": 0.0,
+      "tool_names_called": [
+        "customer_lookup",
+        "order_history"
+      ],
+      "failed_tool_calls": [
+        {
+          "tool_name": "customer_lookup",
+          "arguments": {
+            "id": "78432"
+          },
+          "result": {
+            "result": {
+              "customer_id": "INT-78432",
+              "name": "Robert Johnson"
+            },
+            "succeeded": true
+          },
+          "duration_ms": 15.0,
+          "error": null,
+          "step_id": 2,
+          "timestamp": 1784718748.1777484
+        },
+        {
+          "tool_name": "order_history",
+          "arguments": {
+            "customer_id": "78432"
+          },
+          "result": {
+            "result": {
+              "recent_orders": [
+                {
+                  "id": "ORD-9921",
+                  "amount": 149.99
+                }
+              ]
+            },
+            "succeeded": true
+          },
+          "duration_ms": 22.0,
+          "error": null,
+          "step_id": 3,
+          "timestamp": 1784718748.1777484
+        }
+      ],
+      "errors": [],
+      "state_changes": [],
+      "steps": [
+        {
+          "step_id": 1,
+          "action": "reason",
+          "input": "Load customer queries and rules",
+          "output": "I will process queries while maintaining all 3 rules.",
+          "duration_ms": 3.2,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_id": 2,
+          "action": "tool_call",
+          "input": "customer_lookup(id='78432')",
+          "output": "{\"result\": {\"customer_id\": \"INT-78432\", \"name\": \"Robert Johnson\"}, \"succeeded\": true}",
+          "duration_ms": 15.0,
+          "tool_calls": [
+            {
+              "tool_name": "customer_lookup",
+              "arguments": {
+                "id": "78432"
+              },
+              "result": {
+                "result": {
+                  "customer_id": "INT-78432",
+                  "name": "Robert Johnson"
+                },
+                "succeeded": true
+              },
+              "duration_ms": 15.0,
+              "error": null,
+              "step_id": 2,
+              "timestamp": 1784718748.1777484
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 3,
+          "action": "tool_call",
+          "input": "order_history(customer_id='78432')",
+          "output": "{\"result\": {\"recent_orders\": [{\"id\": \"ORD-9921\", \"amount\": 149.99}]}, \"succeeded\": true}",
+          "duration_ms": 22.0,
+          "tool_calls": [
+            {
+              "tool_name": "order_history",
+              "arguments": {
+                "customer_id": "78432"
+              },
+              "result": {
+                "result": {
+                  "recent_orders": [
+                    {
+                      "id": "ORD-9921",
+                      "amount": 149.99
+                    }
+                  ]
+                },
+                "succeeded": true
+              },
+              "duration_ms": 22.0,
+              "error": null,
+              "step_id": 3,
+              "timestamp": 1784718748.1777484
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 4,
+          "action": "error",
+          "input": "Processing query 3 with context pressure",
+          "output": "Response generated but formality rule dropped",
+          "duration_ms": 8.5,
+          "tool_calls": [],
+          "error": {
+            "message": "Formality rule not applied to response after context pressure",
+            "severity": "medium",
+            "step_id": 4,
+            "recoverable": true,
+            "timestamp": 1784718748.1777484
+          }
+        },
+        {
+          "step_id": 5,
+          "action": "respond",
+          "input": "Final response",
+          "output": "Customer Robert Johnson has 2 recent orders totaling $409.98.",
+          "duration_ms": 4.0,
+          "tool_calls": [],
+          "error": null
+        }
+      ],
+      "metadata": {},
+      "start_time": 1784718748.1777484,
+      "end_time": 1784718748.1777484
+    }
+  }
+}

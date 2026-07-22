@@ -1,5 +1,8 @@
 /**
- * Sentinel Trace Visualization
+ * Sentinel Trace Visualization — Waterfall View
+ *
+ * Renders a Gantt-style waterfall timeline of agent execution steps,
+ * with assertion results and state changes.
  */
 function renderTraceTimeline(traceData) {
   if (!traceData) return '<div class="text-muted">No trace data available.</div>';
@@ -8,77 +11,8 @@ function renderTraceTimeline(traceData) {
   const assertions = traceData.assertions || traceData.results || [];
   const stateChanges = traceData.state_changes || traceData.state || [];
 
-  // Calculate max duration for bar scaling (log scale)
-  let maxDuration = 1;
-  for (const step of steps) {
-    const dur = step.duration || step.duration_ms / 1000 || 0;
-    if (dur > maxDuration) maxDuration = dur;
-  }
-
-  const barScale = (dur) => {
-    if (dur <= 0) return 2;
-    // Log scale: maps to 5%–100% width
-    const logMax = Math.log(maxDuration + 1);
-    const logVal = Math.log(dur + 1);
-    return Math.max(5, Math.min(100, (logVal / logMax) * 100));
-  };
-
-  const stepTypeClass = (step) => {
-    const type = (step.type || step.action || '').toLowerCase();
-    if (type.includes('tool_call') || type.includes('toolcall') || type === 'tool') return 'tool_call';
-    if (type.includes('error') || type.includes('fail')) return 'fail';
-    if (type.includes('reason') || type.includes('thought')) return 'reasoning';
-    if (type.includes('plan')) return 'plan';
-    return 'pass';
-  };
-
-  const stepIcon = (step) => {
-    const cls = stepTypeClass(step);
-    const icons = {
-      pass: '✓',
-      fail: '✗',
-      tool_call: '⚡',
-      reasoning: '💭',
-      plan: '📋',
-    };
-    return icons[cls] || '•';
-  };
-
-  let html = '<div class="trace-container">';
-
-  // Steps timeline
-  if (steps.length > 0) {
-    html += '<div class="trace-timeline">';
-    for (const step of steps) {
-      const cls = stepTypeClass(step);
-      const dur = step.duration || (step.duration_ms ? step.duration_ms / 1000 : 0);
-      const pct = barScale(dur);
-      const toolName = step.tool || step.tool_name || step.name || step.type || 'step';
-      const error = step.error || step.error_message;
-
-      html += `
-        <div class="trace-step">
-          <div class="trace-step-icon ${cls}"></div>
-          <div class="trace-step-content">
-            <div class="trace-step-header">
-              <span class="trace-step-tool">${escapeHtml(toolName)}</span>
-              ${dur > 0 ? `<span class="trace-step-duration">${formatDuration(dur)}</span>` : ''}
-              <span class="badge badge-${cls === 'pass' ? 'pass' : cls === 'fail' ? 'fail' : cls === 'tool_call' ? 'accent' : 'neutral'}" style="font-size:0.65rem;">${stepIcon(step)} ${escapeHtml(cls.replace('_', ' '))}</span>
-            </div>
-            <div class="trace-step-bar">
-              <div class="trace-step-bar-fill ${cls}" style="width:${pct}%"></div>
-            </div>
-            ${step.content || step.output ? `
-              <div class="text-xs text-muted mt-sm" style="max-height:3rem; overflow:hidden; white-space:pre-wrap;">${escapeHtml(String(step.content || step.output).substring(0, 200))}</div>
-            ` : ''}
-            ${error ? `<div class="trace-step-error">${escapeHtml(String(error))}</div>` : ''}
-          </div>
-        </div>
-      `;
-    }
-    html += '</div>';
-  } else {
-    html += `
+  if (steps.length === 0) {
+    return `
       <div class="empty-state">
         <div class="empty-state-icon">🔍</div>
         <div class="empty-state-title">No trace steps</div>
@@ -87,17 +21,114 @@ function renderTraceTimeline(traceData) {
     `;
   }
 
+  // Calculate timing for waterfall positioning
+  let totalDuration = 0;
+  const stepData = steps.map((step, i) => {
+    const dur = step.duration || (step.duration_ms ? step.duration_ms / 1000 : 0);
+    const start = step.start_time || totalDuration;
+    totalDuration += dur;
+    const type = (step.type || step.action || '').toLowerCase();
+    const isTool = type.includes('tool_call') || type.includes('toolcall') || type === 'tool';
+    const isError = type.includes('error') || type.includes('fail') || step.error;
+    const isReasoning = type.includes('reason') || type.includes('thought');
+    const name = step.tool || step.tool_name || step.name || step.type || `step ${i + 1}`;
+
+    return {
+      ...step,
+      index: i,
+      dur,
+      start,
+      type: isTool ? 'tool_call' : isError ? 'fail' : isReasoning ? 'reasoning' : 'pass',
+      name,
+      error: step.error || step.error_message,
+    };
+  });
+
+  const maxDur = Math.max(totalDuration, 0.001);
+
+  // Build waterfall HTML
+  const waterfallBars = stepData.map(s => {
+    const leftPct = maxDur > 0 ? (s.start / maxDur) * 100 : 0;
+    const widthPct = maxDur > 0 ? Math.max(2, (s.dur / maxDur) * 100) : 2;
+
+    const typeColors = {
+      tool_call: 'var(--accent)',
+      fail: 'var(--fail)',
+      reasoning: 'var(--fg-subtle)',
+      pass: 'var(--pass)',
+    };
+    const color = typeColors[s.type] || 'var(--fg-muted)';
+
+    const icons = { tool_call: '⚡', fail: '✗', reasoning: '💭', pass: '✓' };
+    const icon = icons[s.type] || '•';
+
+    return `
+      <div class="trace-step" style="position:relative; height:28px; margin-bottom:2px;">
+        <div style="position:absolute; left:0; top:0; width:120px; height:100%; display:flex; align-items:center; gap:4px; font-size:0.75rem; color:var(--fg-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+          <span style="color:${color};">${icon}</span>
+          <span>${escapeHtml(s.name)}</span>
+        </div>
+        <div style="position:absolute; left:120px; right:0; top:4px; height:20px;">
+          <div style="position:absolute; left:${leftPct}%; width:${Math.max(1, widthPct)}%; height:100%; background:${color}; opacity:0.7; border-radius:3px; min-width:4px;" title="${escapeHtml(s.name)}: ${formatDuration(s.dur)}"></div>
+        </div>
+        <div style="position:absolute; right:0; top:0; height:100%; display:flex; align-items:center; font-size:0.7rem; font-family:var(--font-mono); color:var(--fg-subtle);">
+          ${s.dur > 0 ? formatDuration(s.dur) : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Time axis
+  const timeAxis = `
+    <div style="position:relative; height:20px; margin-bottom:4px; border-bottom:1px solid var(--border-light);">
+      <div style="position:absolute; left:120px; right:0; top:0; height:100%;">
+        ${[0, 25, 50, 75, 100].map(pct => `
+          <span style="position:absolute; left:${pct}%; top:0; font-size:0.65rem; color:var(--fg-subtle); font-family:var(--font-mono); transform:translateX(-50%);">
+            ${formatDuration(maxDur * pct / 100)}
+          </span>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  let html = '<div class="trace-container">';
+
+  // Waterfall
+  html += `
+    <div class="trace-waterfall" style="padding:0.5rem;">
+      ${timeAxis}
+      ${waterfallBars}
+    </div>
+  `;
+
+  // Step details (collapsible)
+  html += '<div class="trace-details" style="margin-top:1rem;">';
+  html += '<h3 style="font-size:0.85rem; color:var(--fg-muted); margin-bottom:0.5rem;">Step Details</h3>';
+  for (const s of stepData) {
+    const color = s.type === 'fail' ? 'var(--fail)' : s.type === 'tool_call' ? 'var(--accent)' : 'var(--pass)';
+    html += `
+      <div style="padding:0.4rem 0; border-bottom:1px solid var(--border-light); font-size:0.8rem;">
+        <span style="color:${color}; font-weight:600;">${escapeHtml(s.name)}</span>
+        <span style="color:var(--fg-subtle); margin-left:0.5rem;">${formatDuration(s.dur)}</span>
+        ${s.error ? `<span style="color:var(--fail); margin-left:0.5rem;">${escapeHtml(String(s.error))}</span>` : ''}
+        ${s.output ? `<div style="color:var(--fg-subtle); margin-top:0.25rem; max-height:3rem; overflow:hidden; white-space:pre-wrap; font-family:var(--font-mono); font-size:0.75rem;">${escapeHtml(String(s.output).substring(0, 200))}</div>` : ''}
+      </div>
+    `;
+  }
+  html += '</div>';
+
   // Assertions
   if (assertions.length > 0) {
+    const passed = assertions.filter(a => a.passed !== false && a.result !== false && a.status !== 'failed').length;
     html += `
-      <div class="trace-assertions">
-        <h3>Assertions (${assertions.filter(a => a.passed !== false && a.result !== false && a.status !== 'failed').length}/${assertions.length} passed)</h3>
+      <div class="trace-assertions" style="margin-top:1rem;">
+        <h3 style="font-size:0.85rem; color:var(--fg-muted); margin-bottom:0.5rem;">Assertions (${passed}/${assertions.length} passed)</h3>
         ${assertions.map(a => {
-          const passed = a.passed !== false && a.result !== false && a.status !== 'failed';
+          const ok = a.passed !== false && a.result !== false && a.status !== 'failed';
           return `
-            <div class="assertion-item">
-              <span class="assertion-icon ${passed ? 'text-pass' : 'text-fail'}">${passed ? '✓' : '✗'}</span>
-              <span class="assertion-text text-sm">${escapeHtml(a.description || a.name || a.expression || JSON.stringify(a))}</span>
+            <div class="assertion-item" style="display:flex; gap:0.4rem; padding:0.3rem 0; font-size:0.8rem;">
+              <span style="color:${ok ? 'var(--pass)' : 'var(--fail)'};">${ok ? '✓' : '✗'}</span>
+              <span>${escapeHtml(a.description || a.name || a.expression || JSON.stringify(a))}</span>
             </div>
           `;
         }).join('')}
@@ -108,12 +139,13 @@ function renderTraceTimeline(traceData) {
   // State changes
   if (stateChanges.length > 0) {
     html += `
-      <div class="trace-state">
-        <h3>State Changes</h3>
+      <div class="trace-state" style="margin-top:1rem;">
+        <h3 style="font-size:0.85rem; color:var(--fg-muted); margin-bottom:0.5rem;">State Changes</h3>
         ${stateChanges.map(sc => `
-          <div class="state-item">
-            <span class="state-key">${escapeHtml(sc.key || sc.name || sc.field || '')}:</span>
-            <span class="state-value">${escapeHtml(String(sc.value || sc.new_value || sc.after || ''))}</span>
+          <div style="display:flex; gap:0.4rem; padding:0.3rem 0; font-size:0.8rem; font-family:var(--font-mono);">
+            <span style="color:var(--accent);">${escapeHtml(sc.key || sc.name || sc.field || '')}</span>
+            <span style="color:var(--fg-subtle);">→</span>
+            <span>${escapeHtml(String(sc.value || sc.new_value || sc.after || ''))}</span>
           </div>
         `).join('')}
       </div>

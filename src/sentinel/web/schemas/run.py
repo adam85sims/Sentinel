@@ -100,6 +100,20 @@ class RunDetailResponse(BaseModel):
 
 class RunListResponse(BaseModel):
     """Paginated list of runs."""
-
     runs: list[RunDetailResponse] = Field(default_factory=list)
     total: int = 0
+
+
+class BatchRunRequest(BaseModel):
+    """Request body to start multiple scenario runs."""
+    scenario_ids: list[str] = Field(default_factory=list)
+    tag: str | None = None  # Filter scenarios by tag
+    model_endpoint: str | None = None
+    max_runs: int = 20  # Safety cap
+
+
+class BatchRunResponse(BaseModel):
+    """Response for batch run submission."""
+    run_ids: list[str] = Field(default_factory=list)
+    total_started: int = 0
+    total_requested: int = 0

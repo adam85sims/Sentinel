@@ -43,6 +43,8 @@ class ScenarioResponse(BaseModel):
     timeout_seconds: int = 30
     chaos_config: dict = Field(default_factory=dict)
     file_path: str = ""
+    raw_yaml: str | None = None
+
 
 
 class ScenarioListResponse(BaseModel):

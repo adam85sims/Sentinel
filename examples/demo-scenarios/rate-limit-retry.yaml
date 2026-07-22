@@ -1,0 +1,42 @@
+id: rate-limit-retry
+name: Rate Limit Retry with Backoff
+description: |
+  Tests whether the agent correctly handles API rate limiting by
+  implementing exponential backoff and retry logic. The search API
+  will return rate limit errors on initial requests, and the agent
+  should detect the 429 status, wait appropriately, and retry
+  until the request succeeds or max retries are exhausted.
+task: "Search the product catalog for 'ergonomic keyboard' and return the top 3 results with prices and availability. The search API may be rate-limited, so implement proper retry logic with exponential backoff. Do not give up after the first failure."
+env_config:
+  tools:
+    search_api:
+      side_effect: "rate_limit"
+      retry_after_ms: 2000
+      max_retries: 3
+      response_on_success:
+        results:
+          - name: "Ergo Keyboard Pro"
+            price: 149.99
+            available: true
+            rating: 4.7
+          - name: "Split Keyboard Elite"
+            price: 199.99
+            available: true
+            rating: 4.5
+          - name: "Compact Ergo Board"
+            price: 89.99
+            available: false
+            rating: 4.3
+chaos_config:
+  rate_limit:
+    target: search_api
+    initial_delay_ms: 2000
+    max_retries: 3
+    backoff_multiplier: 2.0
+    jitter: true
+    succeed_after_retries: 2
+tags:
+  - chaos
+  - rate-limit
+  - retry
+timeout_seconds: 30

@@ -1,0 +1,166 @@
+{
+  "run_id": "fa536a97-694",
+  "scenario_id": "refund-agent-timeout",
+  "scenario_name": "Refund Agent Timeout Handling",
+  "status": "pass",
+  "started_at": "2026-07-22T11:15:59.739175+00:00",
+  "completed_at": "2026-07-22T11:15:59.739175+00:00",
+  "result": {
+    "scenario_id": "refund-agent-timeout",
+    "scenario_name": "Refund Agent Timeout Handling",
+    "passed": true,
+    "duration_ms": 0.0,
+    "error": null,
+    "timestamp": 1784718959.7391748,
+    "assertion_results": [
+      {
+        "assertion_name": "tool_fallback_used",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 1.5
+      },
+      {
+        "assertion_name": "graceful_degradation",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.9
+      },
+      {
+        "assertion_name": "error_handling",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.6
+      },
+      {
+        "assertion_name": "response_quality",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.4
+      }
+    ],
+    "trace": {
+      "total_steps": 4,
+      "total_tool_calls": 2,
+      "total_duration_ms": 0.0,
+      "tool_names_called": [
+        "search",
+        "cache"
+      ],
+      "failed_tool_calls": [
+        {
+          "tool_name": "search",
+          "arguments": {
+            "query": "refund policy"
+          },
+          "result": {
+            "error": "Search API timed out after 10s",
+            "succeeded": false
+          },
+          "duration_ms": 10023.0,
+          "error": "Search API timed out",
+          "step_id": 2,
+          "timestamp": 1784718959.7391748
+        },
+        {
+          "tool_name": "cache",
+          "arguments": {
+            "key": "refund_policy"
+          },
+          "result": {
+            "result": {
+              "refund_policy": "30-day return window for defective items"
+            },
+            "succeeded": true
+          },
+          "duration_ms": 8.3,
+          "error": null,
+          "step_id": 3,
+          "timestamp": 1784718959.7391748
+        }
+      ],
+      "errors": [
+        {
+          "message": "Search API timed out after 10s",
+          "severity": "high",
+          "step_id": 2,
+          "recoverable": true,
+          "timestamp": 1784718959.7391748
+        }
+      ],
+      "state_changes": [],
+      "steps": [
+        {
+          "step_id": 1,
+          "action": "reason",
+          "input": "Planning refund processing steps",
+          "output": "I will search for refund policy, then verify order, then process refund",
+          "duration_ms": 5.2,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_id": 2,
+          "action": "tool_call",
+          "input": "search(query='refund policy')",
+          "output": "{\"error\": \"Search API timed out after 10s\", \"succeeded\": false}",
+          "duration_ms": 10023.0,
+          "tool_calls": [
+            {
+              "tool_name": "search",
+              "arguments": {
+                "query": "refund policy"
+              },
+              "result": {
+                "error": "Search API timed out after 10s",
+                "succeeded": false
+              },
+              "duration_ms": 10023.0,
+              "error": "Search API timed out",
+              "step_id": 2,
+              "timestamp": 1784718959.7391748
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 3,
+          "action": "tool_call",
+          "input": "cache(key='refund_policy')",
+          "output": "{\"result\": {\"refund_policy\": \"30-day return window for defective items\"}, \"succeeded\": true}",
+          "duration_ms": 8.3,
+          "tool_calls": [
+            {
+              "tool_name": "cache",
+              "arguments": {
+                "key": "refund_policy"
+              },
+              "result": {
+                "result": {
+                  "refund_policy": "30-day return window for defective items"
+                },
+                "succeeded": true
+              },
+              "duration_ms": 8.3,
+              "error": null,
+              "step_id": 3,
+              "timestamp": 1784718959.7391748
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 4,
+          "action": "respond",
+          "input": "Generate refund response",
+          "output": "Refund of $49.99 approved for order #12345. Policy: 30-day return window for defective items.",
+          "duration_ms": 3.1,
+          "tool_calls": [],
+          "error": null
+        }
+      ],
+      "metadata": {},
+      "start_time": 1784718959.7391748,
+      "end_time": 1784718959.7391748
+    }
+  }
+}

@@ -1,0 +1,54 @@
+id: network-partition-db
+name: Network Partition Database Recovery
+description: |
+  Simulates a network partition that makes the primary database
+  unreachable. The agent should detect the partition, switch to
+  a read-only replica or local cache, and complete the query with
+  degraded but available data. Tests resilience against network-level
+  failures in distributed systems.
+task: "Retrieve the current inventory status for warehouse locations. The system has multiple warehouses and should aggregate data from all available sources. If primary database is unreachable, use regional replicas or cached inventory counts."
+env_config:
+  tools:
+    primary_database:
+      side_effect: "error"
+      error_message: "Connection refused: network unreachable (10.0.1.50:5432)"
+    replica_east:
+      response:
+        warehouse: "east"
+        items:
+          - sku: "WH-E-001"
+            product: "Widget Alpha"
+            quantity: 234
+          - sku: "WH-E-002"
+            product: "Gadget Beta"
+            quantity: 89
+    replica_west:
+      response:
+        warehouse: "west"
+        items:
+          - sku: "WH-W-001"
+            product: "Widget Alpha"
+            quantity: 156
+          - sku: "WH-W-002"
+            product: "Gadget Beta"
+            quantity: 201
+    cache:
+      response:
+        last_updated: "2026-07-22T08:00:00Z"
+        stale: true
+        items:
+          - sku: "WH-E-001"
+            product: "Widget Alpha"
+            quantity: 240
+chaos_config:
+  network_partition:
+    target: primary_database
+    partition_duration_s: 30
+    affect_replicas: false
+    include_cached_data: true
+    partition_type: "full"
+tags:
+  - chaos
+  - network
+  - partition
+timeout_seconds: 30

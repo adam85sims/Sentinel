@@ -87,6 +87,10 @@ async function loadBaselines() {
                 <span class="text-fail">✗ ${failCount} fail</span>
                 <span class="text-muted">${runCount} total</span>
               </div>
+              <div class="flex gap-sm mt-sm">
+                <a href="${SentinelAPI.getReportHtml(label)}" target="_blank" class="btn btn-ghost btn-sm" title="Download HTML Report">HTML</a>
+                <a href="${SentinelAPI.getReportJunit(label)}" target="_blank" class="btn btn-ghost btn-sm" title="Download JUnit XML">JUnit</a>
+              </div>
             </div>
           `;
         }).join('')}

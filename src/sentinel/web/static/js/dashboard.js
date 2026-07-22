@@ -1,5 +1,8 @@
 /**
  * Sentinel Dashboard Page
+ *
+ * Shows stat cards, a pass/fail trend chart (SVG), recent runs table,
+ * and quick-action buttons.
  */
 function renderDashboard() {
   const content = document.getElementById('app-content');
@@ -33,7 +36,7 @@ async function loadDashboardData() {
     const runsList = Array.isArray(runs) ? runs : (runs.runs || []);
     const baselinesList = Array.isArray(baselines) ? baselines : (baselines.baselines || []);
 
-    const recentRuns = runsList.slice(0, 10);
+    const recentRuns = runsList.slice(0, 20);
     const completed = runsList.filter(r => r.status === 'completed' || r.status === 'failed' || r.status === 'passed');
     const passed = completed.filter(r => r.status === 'completed' || r.status === 'passed');
     const failed = completed.filter(r => r.status === 'failed');
@@ -43,7 +46,7 @@ async function loadDashboardData() {
     const dc = document.getElementById('dashboard-content');
     dc.classList.remove('hidden');
 
-    // Stat cards
+    // ── Stat cards ──
     dc.innerHTML = `
       <div class="stat-grid">
         <div class="stat-card">
@@ -51,19 +54,31 @@ async function loadDashboardData() {
           <div class="stat-value accent">${scenariosList.length}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Recent Pass Rate</div>
+          <div class="stat-label">Pass Rate</div>
           <div class="stat-value ${passRate >= 80 ? 'pass' : passRate >= 50 ? 'warn' : 'fail'}">${completed.length > 0 ? passRate + '%' : '—'}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Recent Failures</div>
+          <div class="stat-label">Failures</div>
           <div class="stat-value ${failed.length > 0 ? 'fail' : 'pass'}">${failed.length}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Total Runs</div>
-          <div class="stat-value">${runsList.length}</div>
+          <div class="stat-label">Baselines</div>
+          <div class="stat-value">${baselinesList.length}</div>
         </div>
       </div>
 
+      <!-- Trend chart -->
+      ${completed.length > 0 ? `
+        <div class="section-header">
+          <h2 class="section-title">Pass Rate Trend</h2>
+          <span class="text-muted text-sm">Last ${Math.min(completed.length, 20)} runs</span>
+        </div>
+        <div class="card" id="trend-chart-container">
+          ${renderTrendChart(completed.slice(0, 20))}
+        </div>
+      ` : ''}
+
+      <!-- Recent runs -->
       <div class="section-header">
         <h2 class="section-title">Recent Runs</h2>
       </div>
@@ -98,27 +113,7 @@ async function loadDashboardData() {
         </div>
       `}
 
-      ${completed.length > 0 ? `
-        <div class="section-header">
-          <h2 class="section-title">Pass / Fail Overview</h2>
-        </div>
-        <div class="card">
-          <div class="bar-chart">
-            ${recentRuns.map(r => {
-              const isPass = r.status === 'completed' || r.status === 'passed';
-              const isFail = r.status === 'failed';
-              const cls = isPass ? 'pass' : isFail ? 'fail' : '';
-              return `<div class="bar-chart-bar ${cls}" style="height: ${cls ? '100%' : '20%'}" title="${escapeHtml(r.scenario_name || r.scenario_id || 'Unknown')}: ${r.status}"></div>`;
-            }).join('')}
-          </div>
-          <div class="bar-chart-legend">
-            <span class="bar-chart-legend-item"><span class="bar-chart-legend-dot" style="background:var(--pass)"></span> Pass</span>
-            <span class="bar-chart-legend-item"><span class="bar-chart-legend-dot" style="background:var(--fail)"></span> Fail</span>
-            <span class="bar-chart-legend-item"><span class="bar-chart-legend-dot" style="background:var(--fg-subtle)"></span> Other</span>
-          </div>
-        </div>
-      ` : ''}
-
+      <!-- Quick actions -->
       <div class="section-header">
         <h2 class="section-title">Quick Actions</h2>
       </div>
@@ -149,6 +144,89 @@ async function loadDashboardData() {
   }
 }
 
+/**
+ * Render an SVG trend chart showing pass rate over recent runs.
+ * Each run gets a vertical bar: green for pass, red for fail.
+ * A polyline connects the running pass rate %.
+ */
+function renderTrendChart(runs) {
+  if (!runs || runs.length === 0) return '';
+
+  const W = 700;   // chart width
+  const H = 140;   // chart height
+  const PAD = 40;   // left padding for y-axis labels
+  const GAP = 6;   // gap between bars
+  const barW = Math.max(8, Math.min(24, (W - PAD) / runs.length - GAP));
+
+  // Compute running pass rate at each point
+  let passCount = 0;
+  const points = runs.map((r, i) => {
+    const isPass = r.status === 'completed' || r.status === 'passed';
+    if (isPass) passCount++;
+    const rate = ((passCount / (i + 1)) * 100);
+    return { isPass, rate, index: i };
+  });
+
+  // SVG polyline points for the trend line
+  const polylinePoints = points.map(p => {
+    const x = PAD + p.index * (barW + GAP) + barW / 2;
+    const y = H - (p.rate / 100) * (H - 20);  // 20px top padding
+    return `${x},${y}`;
+  }).join(' ');
+
+  // Y-axis labels
+  const yLabels = [0, 25, 50, 75, 100].map(pct => {
+    const y = H - (pct / 100) * (H - 20);
+    return `<text x="${PAD - 8}" y="${y + 4}" class="trend-y-label" text-anchor="end">${pct}%</text>
+            <line x1="${PAD}" y1="${y}" x2="${W}" y2="${y}" class="trend-gridline"/>`;
+  }).join('');
+
+  // Bars
+  const bars = points.map((p, i) => {
+    const x = PAD + i * (barW + GAP);
+    const barH = p.isPass ? H : H * 0.3;
+    const color = p.isPass ? 'var(--pass)' : 'var(--fail)';
+    const opacity = p.isPass ? '0.35' : '0.5';
+    return `<rect x="${x}" y="${H - barH}" width="${barW}" height="${barH}" rx="2" fill="${color}" opacity="${opacity}" class="trend-bar"/>`;
+  }).join('');
+
+  // Final pass rate label
+  const lastRate = points[points.length - 1].rate;
+  const lastX = PAD + (runs.length - 1) * (barW + GAP) + barW / 2;
+  const lastY = H - (lastRate / 100) * (H - 20);
+
+  return `
+    <div class="trend-chart-wrapper" style="overflow-x:auto;">
+      <svg viewBox="0 0 ${W} ${H + 10}" width="100%" height="${H + 10}" preserveAspectRatio="xMidYMid meet" style="min-width:300px;">
+        <defs>
+          <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Grid -->
+        ${yLabels}
+
+        <!-- Bars -->
+        ${bars}
+
+        <!-- Trend line -->
+        <polyline points="${polylinePoints}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+
+        <!-- Fill under the line -->
+        <polygon points="${polylinePoints} ${lastX},${H} ${PAD + barW / 2},${H}" fill="url(#trend-fill)"/>
+
+        <!-- Final rate label -->
+        <circle cx="${lastX}" cy="${lastY}" r="4" fill="var(--accent)"/>
+        <text x="${lastX}" y="${lastY - 10}" class="trend-final-label" text-anchor="middle">${Math.round(lastRate)}%</text>
+      </svg>
+    </div>
+  `;
+}
+
+// ── Helpers (exposed globally) ──
+
 function statusBadge(status) {
   const map = {
     'passed':  'badge-pass',
@@ -174,8 +252,7 @@ function formatTime(ts) {
   try {
     const d = new Date(ts);
     return d.toLocaleString('en-US', {
-      month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: false,
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
     });
   } catch (_) {
     return ts;

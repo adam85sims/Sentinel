@@ -1,0 +1,39 @@
+id: cascade-db-api-ui
+name: Cascading Database Failure
+description: |
+  Simulates a cascading failure where a database timeout propagates
+  through the API layer to the user interface. Tests whether the agent
+  can detect the root cause (database), apply circuit breaker patterns,
+  and provide meaningful degradation rather than complete failure.
+task: "Fetch the user dashboard data for user ID 789. The dashboard requires customer profile from the database, recent orders from the API, and rendering data for the UI. Handle any failures gracefully and return partial results if possible."
+env_config:
+  tools:
+    database:
+      side_effect: "timeout"
+      error_message: "Database connection timeout after 5000ms"
+    api_server:
+      depends_on: database
+      side_effect: "error"
+      error_message: "API unavailable: upstream dependency failed"
+    user_interface:
+      depends_on: api_server
+      response:
+        fallback_message: "Dashboard partially loaded. Some data unavailable."
+        cached_profile:
+          name: "Jane Smith"
+          tier: "premium"
+          since: "2024-01-15"
+chaos_config:
+  timeout:
+    target: database
+    delay_ms: 8000
+    probability: 1.0
+  cascade:
+    enabled: true
+    propagation_depth: 3
+    include_upstream: true
+tags:
+  - chaos
+  - cascade
+  - production
+timeout_seconds: 30

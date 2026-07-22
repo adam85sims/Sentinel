@@ -320,3 +320,44 @@ class TestModelEndpointsAPI:
         assert test_resp.status_code == 200
         assert test_resp.json()["success"] is False
         assert "500" in test_resp.json()["message"]
+
+
+# ──────────────────────────────────────────────────────
+# Governance API
+# ──────────────────────────────────────────────────────
+
+
+class TestGovernanceAPI:
+    """Tests for the governance endpoints."""
+
+    def test_get_governance_summary(self, client: TestClient) -> None:
+        resp = client.get("/api/governance")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "total_audits" in data
+        assert "passed_audits" in data
+        assert "pass_rate" in data
+        assert "critical_findings" in data
+        assert "history" in data
+        assert isinstance(data["history"], list)
+
+    def test_get_nonexistent_report(self, client: TestClient) -> None:
+        resp = client.get("/api/governance/reports/audit-00000000-000000")
+        assert resp.status_code == 404
+
+    def test_get_invalid_format_report(self, client: TestClient) -> None:
+        resp = client.get("/api/governance/reports/invalid-id")
+        assert resp.status_code == 400
+
+    @patch("sentinel.web.api.governance.run_audit")
+    def test_trigger_audit(self, mock_run_audit, client: TestClient) -> None:
+        from common.models import AuditResult, Verdict
+        mock_result = AuditResult(verdict=Verdict.PASS, summary="Audit passed")
+        mock_run_audit.return_value = mock_result
+
+        resp = client.post("/api/governance/audit", json={"diary_date": "2026-07-08"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["verdict"] == "PASS"
+        assert data["summary"] == "Audit passed"
+

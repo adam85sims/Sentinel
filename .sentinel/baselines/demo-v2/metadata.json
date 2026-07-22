@@ -1,0 +1,15 @@
+{
+  "label": "demo-v2",
+  "timestamp": 1784718959.7603018,
+  "git_sha": "",
+  "git_branch": "",
+  "tags": [
+    "demo",
+    "v2"
+  ],
+  "description": "Improved demo baseline",
+  "scenario_count": 24,
+  "pass_count": 16,
+  "fail_count": 8,
+  "metadata": {}
+}

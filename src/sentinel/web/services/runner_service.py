@@ -18,15 +18,15 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
 import yaml
-
 from sentinel.runner import ScenarioRunner, SentinelResult, SentinelScenario
+from sentinel.web.services import persistence
 
 # Default scenario directory relative to project root.
 # Resolved once at import time by walking up from this file.
@@ -63,14 +63,44 @@ class RunState:
 
 
 class RunManager:
-    """In-memory registry of active and recent runs.
+    """Registry of active and recent runs with disk persistence.
 
-    Intentionally lightweight — no disk persistence. The dict keeps
-    runs accessible for SSE streaming and the GET /api/runs endpoint.
+    On startup, previously-completed runs are loaded from disk so the
+    UI can display run history across server restarts.
     """
-
     def __init__(self) -> None:
         self._runs: dict[str, RunState] = {}
+        self._load_from_disk()
+
+    def _load_from_disk(self) -> None:
+        """Populate _runs from persisted JSON files on startup."""
+        persisted = persistence.load_all_runs()
+        for data in persisted:
+            run_id = data.get("run_id", "")
+            if not run_id:
+                continue
+            # Reconstruct a RunState with status/timing/scenario info
+            # but result=None (caller can use load_run_result for full data)
+            state = RunState(
+                run_id=run_id,
+                scenario_id=data.get("scenario_id", ""),
+                scenario_name=data.get("scenario_name", ""),
+                status=data.get("status", "completed"),
+            )
+            # Parse ISO timestamps back to datetime
+            started = data.get("started_at")
+            completed = data.get("completed_at")
+            if started:
+                try:
+                    state.started_at = datetime.fromisoformat(started)
+                except (ValueError, TypeError):
+                    pass
+            if completed:
+                try:
+                    state.completed_at = datetime.fromisoformat(completed)
+                except (ValueError, TypeError):
+                    pass
+            self._runs[run_id] = state
 
     def create_run(self, scenario_id: str, scenario_name: str = "") -> RunState:
         """Allocate a new run with a unique ID and 'queued' status."""
@@ -87,6 +117,10 @@ class RunManager:
 
     def get(self, run_id: str) -> RunState | None:
         return self._runs.get(run_id)
+
+    def load_run_result(self, run_id: str) -> dict[str, Any] | None:
+        """Read the full persisted result data for a completed run."""
+        return persistence.load_run_result(run_id)
 
     def list_runs(self) -> list[RunState]:
         """Return all runs, newest started_at first."""
@@ -146,6 +180,10 @@ def discover_scenarios(scenario_dir: str | None = None) -> list[dict[str, Any]]:
             data = _load_scenario_file(path)
             # Use file stem as id if the YAML doesn't define one
             scenario_id = data.get("id", path.stem)
+            try:
+                raw_yaml = path.read_text(encoding="utf-8")
+            except Exception:
+                raw_yaml = None
             scenarios.append(
                 {
                     "id": scenario_id,
@@ -157,6 +195,7 @@ def discover_scenarios(scenario_dir: str | None = None) -> list[dict[str, Any]]:
                     "timeout_seconds": data.get("timeout_seconds", 30),
                     "chaos_config": data.get("chaos_config", {}),
                     "file_path": str(path),
+                    "raw_yaml": raw_yaml,
                 }
             )
         except Exception:
@@ -395,6 +434,8 @@ def _execute_in_thread(state: RunState, scenario: SentinelScenario, agent_fn=Non
         )
     finally:
         state.completed_at = datetime.now(UTC)
+        # Persist the completed run to disk
+        persistence.save_run(state)
         # Push a completion event so any connected SSE stream knows
         try:
             state.event_queue.put_nowait(

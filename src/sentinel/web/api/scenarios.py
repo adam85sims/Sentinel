@@ -7,7 +7,7 @@ does NOT store them; it's a read-only view into the filesystem.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from sentinel.web.schemas.scenario import (
     ScenarioListResponse,
@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api/scenarios", tags=["scenarios"])
 
 @router.get("", response_model=ScenarioListResponse)
 async def list_scenarios(
+    request: Request,
     scenario_dir: str | None = Query(
         default=None,
         description="Directory containing scenario YAML/JSON files. "
@@ -35,7 +36,8 @@ async def list_scenarios(
     and returns their metadata.  Files that fail to parse are silently
     skipped so a single bad file doesn't break the list.
     """
-    items = discover_scenarios(scenario_dir)
+    dir_to_use = scenario_dir or getattr(request.app.state, "scenario_dir", None)
+    items = discover_scenarios(dir_to_use)
     return ScenarioListResponse(
         scenarios=[ScenarioResponse(**s) for s in items],
         total=len(items),
@@ -44,6 +46,7 @@ async def list_scenarios(
 
 @router.get("/{scenario_id}", response_model=ScenarioResponse)
 async def get_scenario(
+    request: Request,
     scenario_id: str,
     scenario_dir: str | None = Query(
         default=None,
@@ -55,7 +58,8 @@ async def get_scenario(
     The ``id`` is the ``id`` field from the YAML file, or the
     filename stem when no ``id`` is defined.
     """
-    detail = get_scenario_detail(scenario_dir, scenario_id)
+    dir_to_use = scenario_dir or getattr(request.app.state, "scenario_dir", None)
+    detail = get_scenario_detail(dir_to_use, scenario_id)
     if detail is None:
         raise HTTPException(
             status_code=404,

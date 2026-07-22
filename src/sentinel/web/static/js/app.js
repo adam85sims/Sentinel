@@ -13,10 +13,14 @@
   const routes = [
     { pattern: /^#?\/?$/, handler: renderDashboard },
     { pattern: /^#?\/scenarios$/, handler: renderScenarios },
+    { pattern: /^#?\/scenarios\/__new__$/, handler: (id) => renderScenarioEditor('__new__') },
+    { pattern: /^#?\/scenarios\/(.+)\/edit$/, handler: (id) => renderScenarioEditor(id) },
     { pattern: /^#?\/scenarios\/(.+)$/, handler: renderScenarioDetail },
     { pattern: /^#?\/runs$/, handler: renderRuns },
     { pattern: /^#?\/runs\/(.+)$/, handler: renderRunDetail },
     { pattern: /^#?\/baselines$/, handler: renderBaselines },
+    { pattern: /^#?\/chaos$/, handler: renderChaosBuilder },
+    { pattern: /^#?\/governance$/, handler: renderGovernance },
     { pattern: /^#?\/settings$/, handler: renderSettings },
   ];
 
@@ -191,6 +195,65 @@
           : "▼ Logs";
       });
     }
+
+    // ── Light/Dark mode toggle ──
+    const themeBtn = document.getElementById("theme-toggle");
+    if (themeBtn) {
+      const saved = localStorage.getItem("sentinel-theme");
+      if (saved === "light") document.documentElement.setAttribute("data-theme", "light");
+
+      themeBtn.addEventListener("click", () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        if (isLight) {
+          document.documentElement.removeAttribute("data-theme");
+          localStorage.setItem("sentinel-theme", "dark");
+        } else {
+          document.documentElement.setAttribute("data-theme", "light");
+          localStorage.setItem("sentinel-theme", "light");
+        }
+      });
+    }
+
+    // ── Keyboard shortcuts ──
+    let pendingKey = null;
+    let pendingTimeout = null;
+
+    document.addEventListener("keydown", (e) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+
+      // ? — show help
+      if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
+        _showShortcutHelp();
+        return;
+      }
+
+      // Escape — close help overlay
+      if (e.key === "Escape") {
+        const overlay = document.getElementById("shortcut-help-overlay");
+        if (overlay) overlay.remove();
+        return;
+      }
+
+      // Two-key combos: g + d/s/r/b/c/g
+      if (pendingKey === "g") {
+        clearTimeout(pendingTimeout);
+        pendingKey = null;
+        const routeMap = { d: "#/", s: "#/scenarios", r: "#/runs", b: "#/baselines", c: "#/chaos", g: "#/governance" };
+        if (routeMap[e.key]) {
+          e.preventDefault();
+          navigate(routeMap[e.key]);
+          window.location.hash = routeMap[e.key];
+        }
+        return;
+      }
+
+      if (e.key === "g" && !e.ctrlKey && !e.metaKey) {
+        pendingKey = "g";
+        pendingTimeout = setTimeout(() => { pendingKey = null; }, 800);
+        return;
+      }
+    });
   });
 
   // ── Expose utilities for other modules ──
@@ -205,4 +268,32 @@
       streamManager = sm;
     },
   };
+
+  /** Show keyboard shortcut help overlay */
+  function _showShortcutHelp() {
+    if (document.getElementById("shortcut-help-overlay")) return;
+    const overlay = document.createElement("div");
+    overlay.id = "shortcut-help-overlay";
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;";
+    overlay.innerHTML = `
+      <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;max-width:400px;width:90%;box-shadow:var(--shadow-lg);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="margin:0;font-size:1rem;">Keyboard Shortcuts</h3>
+          <button onclick="document.getElementById('shortcut-help-overlay').remove()" style="background:none;border:none;color:var(--fg-muted);cursor:pointer;font-size:1.2rem;">&times;</button>
+        </div>
+        <div style="font-size:0.85rem;line-height:1.8;">
+          <div><kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">g</kbd> then <kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">d</kbd> — Dashboard</div>
+          <div><kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">g</kbd> then <kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">s</kbd> — Scenarios</div>
+          <div><kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">g</kbd> then <kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">r</kbd> — Runs</div>
+          <div><kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">g</kbd> then <kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">b</kbd> — Baselines</div>
+          <div><kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">g</kbd> then <kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">c</kbd> — Chaos</div>
+          <div><kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">g</kbd> then <kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">g</kbd> — Governance</div>
+          <div><kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">?</kbd> — Show this help</div>
+          <div><kbd style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;">Esc</kbd> — Close overlay</div>
+        </div>
+      </div>
+    `;
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  }
 })();

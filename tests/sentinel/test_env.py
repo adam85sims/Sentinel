@@ -1,13 +1,12 @@
 """Tests for Sentinel mock tool environment."""
 
 import pytest
+
 from sentinel.env import (
-    Environment,
     EnvironmentBuilder,
     MockTool,
     MockToolError,
     RateLimitError,
-    TimeoutError,
 )
 
 

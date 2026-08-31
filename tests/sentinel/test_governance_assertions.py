@@ -9,10 +9,10 @@ Tests governance boundary validation including:
 - Edge cases and integration scenarios
 """
 import pytest
+
 from sentinel.assertions import (
     assert_approval_before_action,
     assert_permission_respected,
-    assert_permission_violated,
     assert_state_changed,
     assert_state_consistent,
     assert_tool_allowlist,
@@ -21,14 +21,11 @@ from sentinel.assertions import (
 )
 from sentinel.models import (
     AgentTrace,
-    Error,
-    ErrorSeverity,
     StateChange,
     Step,
     StepAction,
     ToolCall,
 )
-
 
 # ──────────────────────────────────────────────────────
 # Helpers

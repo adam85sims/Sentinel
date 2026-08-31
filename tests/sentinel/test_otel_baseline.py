@@ -1,13 +1,21 @@
 """Tests for Phase 8: OpenTelemetry export, baseline storage, diff CLI."""
 
 import json
-import os
-import shutil
-import tempfile
 import time
 
 import pytest
 
+from sentinel.baseline import (
+    _deserialize_result,
+    _deserialize_trace,
+    _serialize_result,
+    _serialize_trace,
+    delete_baseline,
+    get_baseline_dir,
+    list_baselines,
+    load_baseline,
+    record_baseline,
+)
 from sentinel.models import (
     AgentTrace,
     Error,
@@ -18,27 +26,11 @@ from sentinel.models import (
     ToolCall,
 )
 from sentinel.otel import (
-    OTelSpan,
-    SpanAttribute,
-    SpanEvent,
-    trace_to_spans,
-    _short_id,
     _ns_from_timestamp,
-)
-from sentinel.baseline import (
-    BaselineMetadata,
-    delete_baseline,
-    get_baseline_dir,
-    list_baselines,
-    load_baseline,
-    record_baseline,
-    _deserialize_result,
-    _deserialize_trace,
-    _serialize_result,
-    _serialize_trace,
+    _short_id,
+    trace_to_spans,
 )
 from sentinel.runner import SentinelAssertionResult, SentinelResult
-
 
 # ──────────────────────────────────────────────────────
 # Helpers

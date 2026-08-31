@@ -1,7 +1,8 @@
 """Tests for Sentinel LangChain adapter."""
 
 import pytest
-from sentinel.adapters.langchain import SentinelToolAdapter, AgentWrapper, wrap_agent
+
+from sentinel.adapters.langchain import SentinelToolAdapter, wrap_agent
 from sentinel.env import MockTool, MockToolError, RateLimitError
 from sentinel.models import AgentTrace
 

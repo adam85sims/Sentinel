@@ -14,6 +14,7 @@ import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from itertools import count
 from typing import Any
 
 
@@ -56,6 +57,10 @@ __all__ = [
 ]
 
 
+# Monotonic sequence generator for deterministic call ordering.
+_next_seq = count().__next__
+
+
 @dataclass
 class MockToolCall:
     """Record of a single call to a mock tool.
@@ -68,6 +73,9 @@ class MockToolCall:
     error: str | None = None
     duration_ms: float = 0.0
     timestamp: float = field(default_factory=time.time)
+    # Monotonic sequence: guarantees deterministic ordering when two calls land
+    # in the same time.time() tick (identical timestamps).
+    seq: int = field(default_factory=_next_seq)
 
 
 @dataclass
@@ -1038,7 +1046,7 @@ class Environment:
         calls = []
         for tool in self.tools.values():
             calls.extend(tool.calls)
-        return sorted(calls, key=lambda c: c.timestamp)
+        return sorted(calls, key=lambda c: (c.timestamp, c.seq))
 
     def reset(self) -> None:
         """Clear all recorded calls."""

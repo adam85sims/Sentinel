@@ -1,14 +1,11 @@
 """Tests for Phase 7: RegressionReport, HTML report, JUnit XML."""
 
-import json
 import time
 
-import pytest
-
-from sentinel.models import AgentTrace, Error, ErrorSeverity, Step, StepAction, ToolCall
+from sentinel.models import AgentTrace, ToolCall
 from sentinel.reporting import (
-    ResultDelta,
     RegressionReport,
+    ResultDelta,
     ScenarioDelta,
     build_regression_report,
     diff_traces,
@@ -17,7 +14,6 @@ from sentinel.reporting import (
     generate_junit_xml_from_report,
 )
 from sentinel.runner import SentinelAssertionResult, SentinelResult
-
 
 # ──────────────────────────────────────────────────────
 # Helpers

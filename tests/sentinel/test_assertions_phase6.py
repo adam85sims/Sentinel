@@ -1,19 +1,20 @@
 """Tests for Phase 6: Performance & State Assertions."""
 
 import time
+
 import pytest
-from sentinel.models import AgentTrace, Step, StepAction, ToolCall, StateChange
+
 from sentinel.assertions import (
     assert_latency,
-    assert_token_usage,
-    assert_step_count,
-    assert_tool_latency,
-    assert_state_not_stale,
     assert_state_consistent_across_traces,
-    detect_state_collisions,
     assert_state_no_collisions,
+    assert_state_not_stale,
+    assert_step_count,
+    assert_token_usage,
+    assert_tool_latency,
+    detect_state_collisions,
 )
-
+from sentinel.models import AgentTrace, StateChange, Step, StepAction, ToolCall
 
 # ──────────────────────────────────────────────────────
 # Helpers — trace builders

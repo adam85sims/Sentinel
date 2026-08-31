@@ -1,19 +1,18 @@
 """Tests for Sentinel runner — @sentinel_test decorator, ScenarioRunner, SentinelResult."""
 
 import functools
-import pytest
+
+from sentinel.assertions import assert_tool_called, assert_tool_not_called
+from sentinel.env import Environment, EnvironmentBuilder
+from sentinel.models import AgentTrace
 from sentinel.runner import (
     AgentConfig,
-    SentinelAssertionResult,
     ScenarioRunner,
+    SentinelAssertionResult,
     SentinelResult,
     SentinelScenario,
     sentinel_test,
 )
-from sentinel.env import Environment, EnvironmentBuilder, MockTool, MockToolError
-from sentinel.models import AgentTrace
-from sentinel.assertions import assert_tool_called, assert_tool_not_called
-
 
 # ──────────────────────────────────────────────────────
 # @sentinel_test decorator
@@ -201,8 +200,6 @@ class TestScenarioRunner:
 
     def test_run_batch(self):
         """run_batch executes multiple scenarios."""
-        env = EnvironmentBuilder().mock_tool("search", response="ok").build()
-
         scenarios = [
             SentinelScenario(id=f"batch-{i}", name=f"Batch {i}", task="task")
             for i in range(3)

@@ -1,6 +1,7 @@
 """Tests for Sentinel generic hook-based adapter."""
 
 import pytest
+
 from sentinel.adapters.generic import (
     HookAdapter,
     HookAdapterGroup,

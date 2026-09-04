@@ -15,6 +15,12 @@ import pytest
 # Skip this module if playwright is not installed
 pytest.importorskip("playwright", reason="playwright library not installed")
 
+# Mark every test in this module as e2e so they can be deselected with
+# `-m "not e2e"`. pytest-playwright creates a long-lived asyncio loop
+# for browser fixtures; co-running these tests with `@pytest.mark.asyncio`
+# tests triggers "Runner.run() cannot be called from a running event loop".
+pytestmark = pytest.mark.e2e
+
 import uvicorn
 from playwright.sync_api import Page
 

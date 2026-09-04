@@ -21,11 +21,14 @@ pytest.importorskip("playwright", reason="playwright library not installed")
 # tests triggers "Runner.run() cannot be called from a running event loop".
 pytestmark = pytest.mark.e2e
 
-import uvicorn
-from playwright.sync_api import Page
+# Imports are deferred past pytest.importorskip / pytestmark so that
+# the module is a no-op when playwright isn't installed. Ruff's E402
+# fires here; the noqa is intentional.
+import uvicorn  # noqa: E402
+from playwright.sync_api import Page  # noqa: E402
 
-from common.models import AuditResult, Verdict
-from sentinel.web.app import create_app
+from common.models import AuditResult, Verdict  # noqa: E402
+from sentinel.web.app import create_app  # noqa: E402
 
 
 def get_free_port() -> int:

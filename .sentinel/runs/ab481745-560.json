@@ -1,0 +1,311 @@
+{
+  "run_id": "ab481745-560",
+  "scenario_id": "multi-tool-resilience",
+  "scenario_name": "Multi-Tool Full Chaos Resilience",
+  "status": "pass",
+  "started_at": "2026-07-22T11:08:14.748767+00:00",
+  "completed_at": "2026-07-22T11:08:14.748767+00:00",
+  "result": {
+    "scenario_id": "multi-tool-resilience",
+    "scenario_name": "Multi-Tool Full Chaos Resilience",
+    "passed": true,
+    "duration_ms": 0.0,
+    "error": null,
+    "timestamp": 1784718494.7487679,
+    "assertion_results": [
+      {
+        "assertion_name": "tool_fallback_used",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 1.2
+      },
+      {
+        "assertion_name": "graceful_degradation",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.8
+      },
+      {
+        "assertion_name": "error_handling",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.5
+      },
+      {
+        "assertion_name": "response_quality",
+        "passed": true,
+        "error_message": null,
+        "duration_ms": 0.3
+      }
+    ],
+    "trace": {
+      "total_steps": 7,
+      "total_tool_calls": 5,
+      "total_duration_ms": 0.0,
+      "tool_names_called": [
+        "search",
+        "database",
+        "api_server",
+        "email",
+        "cache"
+      ],
+      "failed_tool_calls": [
+        {
+          "tool_name": "search",
+          "arguments": {
+            "query": "order ORD-7721"
+          },
+          "result": {
+            "error": "Search service timeout",
+            "succeeded": false
+          },
+          "duration_ms": 10018.0,
+          "error": "Timeout",
+          "step_id": 2,
+          "timestamp": 1784718494.7487679
+        },
+        {
+          "tool_name": "database",
+          "arguments": {
+            "query": "order ORD-7721"
+          },
+          "result": {
+            "error": "Database locked",
+            "succeeded": false
+          },
+          "duration_ms": 8.0,
+          "error": "DB locked",
+          "step_id": 3,
+          "timestamp": 1784718494.7487679
+        },
+        {
+          "tool_name": "api_server",
+          "arguments": {
+            "path": "/tracking/FX-9876543210"
+          },
+          "result": {
+            "result": {
+              "tracking_status": "in_transit"
+            },
+            "succeeded": true
+          },
+          "duration_ms": 250.0,
+          "error": null,
+          "step_id": 4,
+          "timestamp": 1784718494.7487679
+        },
+        {
+          "tool_name": "email",
+          "arguments": {
+            "to": "alice@example.com"
+          },
+          "result": {
+            "error": "Email rate limited",
+            "succeeded": false
+          },
+          "duration_ms": 50.0,
+          "error": "Rate limited",
+          "step_id": 5,
+          "timestamp": 1784718494.7487679
+        },
+        {
+          "tool_name": "cache",
+          "arguments": {
+            "key": "recent_orders"
+          },
+          "result": {
+            "result": {
+              "recent_orders": [
+                {
+                  "order_id": "ORD-7721",
+                  "customer": "Alice Cooper"
+                }
+              ]
+            },
+            "succeeded": true
+          },
+          "duration_ms": 5.0,
+          "error": null,
+          "step_id": 6,
+          "timestamp": 1784718494.7487679
+        }
+      ],
+      "errors": [
+        {
+          "message": "Search service timeout",
+          "severity": "high",
+          "step_id": 2,
+          "recoverable": true,
+          "timestamp": 1784718494.7487679
+        },
+        {
+          "message": "Database locked: too many connections",
+          "severity": "high",
+          "step_id": 3,
+          "recoverable": true,
+          "timestamp": 1784718494.7487679
+        },
+        {
+          "message": "Email service rate limited",
+          "severity": "medium",
+          "step_id": 5,
+          "recoverable": true,
+          "timestamp": 1784718494.7487679
+        }
+      ],
+      "state_changes": [],
+      "steps": [
+        {
+          "step_id": 1,
+          "action": "reason",
+          "input": "Analyze customer complaint \u2014 multiple issues reported",
+          "output": "Will attempt all tools in priority order, using fallbacks where needed.",
+          "duration_ms": 5.0,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_id": 2,
+          "action": "tool_call",
+          "input": "search(query='order ORD-7721')",
+          "output": "{\"error\": \"Search service timeout\", \"succeeded\": false}",
+          "duration_ms": 10018.0,
+          "tool_calls": [
+            {
+              "tool_name": "search",
+              "arguments": {
+                "query": "order ORD-7721"
+              },
+              "result": {
+                "error": "Search service timeout",
+                "succeeded": false
+              },
+              "duration_ms": 10018.0,
+              "error": "Timeout",
+              "step_id": 2,
+              "timestamp": 1784718494.7487679
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 3,
+          "action": "tool_call",
+          "input": "database(query='order ORD-7721')",
+          "output": "{\"error\": \"Database locked\", \"succeeded\": false}",
+          "duration_ms": 8.0,
+          "tool_calls": [
+            {
+              "tool_name": "database",
+              "arguments": {
+                "query": "order ORD-7721"
+              },
+              "result": {
+                "error": "Database locked",
+                "succeeded": false
+              },
+              "duration_ms": 8.0,
+              "error": "DB locked",
+              "step_id": 3,
+              "timestamp": 1784718494.7487679
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 4,
+          "action": "tool_call",
+          "input": "api_server(path='/tracking/FX-9876543210')",
+          "output": "{\"result\": {\"tracking_status\": \"in_transit\"}, \"succeeded\": true}",
+          "duration_ms": 250.0,
+          "tool_calls": [
+            {
+              "tool_name": "api_server",
+              "arguments": {
+                "path": "/tracking/FX-9876543210"
+              },
+              "result": {
+                "result": {
+                  "tracking_status": "in_transit"
+                },
+                "succeeded": true
+              },
+              "duration_ms": 250.0,
+              "error": null,
+              "step_id": 4,
+              "timestamp": 1784718494.7487679
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 5,
+          "action": "tool_call",
+          "input": "email(to='alice@example.com', subject='Order Update')",
+          "output": "{\"error\": \"Email rate limited\", \"succeeded\": false}",
+          "duration_ms": 50.0,
+          "tool_calls": [
+            {
+              "tool_name": "email",
+              "arguments": {
+                "to": "alice@example.com"
+              },
+              "result": {
+                "error": "Email rate limited",
+                "succeeded": false
+              },
+              "duration_ms": 50.0,
+              "error": "Rate limited",
+              "step_id": 5,
+              "timestamp": 1784718494.7487679
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 6,
+          "action": "tool_call",
+          "input": "cache(key='recent_orders')",
+          "output": "{\"result\": {\"recent_orders\": [{\"order_id\": \"ORD-7721\", \"customer\": \"Alice Cooper\"}]}, \"succeeded\": true}",
+          "duration_ms": 5.0,
+          "tool_calls": [
+            {
+              "tool_name": "cache",
+              "arguments": {
+                "key": "recent_orders"
+              },
+              "result": {
+                "result": {
+                  "recent_orders": [
+                    {
+                      "order_id": "ORD-7721",
+                      "customer": "Alice Cooper"
+                    }
+                  ]
+                },
+                "succeeded": true
+              },
+              "duration_ms": 5.0,
+              "error": null,
+              "step_id": 6,
+              "timestamp": 1784718494.7487679
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 7,
+          "action": "respond",
+          "input": "Generate response with partial data",
+          "output": "Order ORD-7721 found via cache. Tracking: in transit, FedEx FX-9876543210. Email queued.",
+          "duration_ms": 3.2,
+          "tool_calls": [],
+          "error": null
+        }
+      ],
+      "metadata": {},
+      "start_time": 1784718494.7487679,
+      "end_time": 1784718494.7487679
+    }
+  }
+}

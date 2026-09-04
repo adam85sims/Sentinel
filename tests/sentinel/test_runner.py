@@ -211,6 +211,19 @@ class TestScenarioRunner:
         assert len(results) == 3
         assert all(r.passed for r in results)
 
+    def test_run_batch_parallel(self):
+        """run_batch executes multiple scenarios in parallel with max_workers."""
+        scenarios = [
+            SentinelScenario(id=f"parallel-{i}", name=f"Parallel {i}", task="task")
+            for i in range(3)
+        ]
+
+        runner = ScenarioRunner()
+        results = runner.run_batch(scenarios, agent_fn=_simple_agent, max_workers=3)
+
+        assert len(results) == 3
+        assert all(r.passed for r in results)
+
     def test_multiple_assertions(self):
         """Multiple assertions are all checked."""
         env = EnvironmentBuilder().mock_tool("search", response="ok").build()

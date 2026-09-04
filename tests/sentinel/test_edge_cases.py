@@ -87,14 +87,22 @@ class TestMalformedInputs:
         assert result == {"extra": "value"}
 
     def test_trace_with_invalid_tool_call(self):
-        """Adding None to trace should raise or be rejected."""
+        """Lock current behavior: ``add_tool_call(None)`` appends ``None`` silently.
+
+        ``AgentTrace.add_tool_call`` performs no validation today — it just
+        delegates to ``self.tool_calls.append(call)``. This test pins the
+        behavior so any tightening of the contract (e.g. raising ``TypeError``
+        on ``None``) becomes a deliberate, reviewed change.
+
+        TODO: Decide whether ``add_tool_call`` should validate its input and
+        raise ``TypeError`` for ``None``. If so, update this test to assert
+        the raise, and audit any callers that may pass ``None`` defensively.
+        """
         trace = AgentTrace()
-        # ToolCall requires tool_name, so this should raise
-        try:
-            trace.add_tool_call(None)
-            # If it doesn't raise, that's also acceptable behavior
-        except (TypeError, AttributeError):
-            pass  # Expected
+        trace.add_tool_call(None)
+
+        assert len(trace.tool_calls) == 1
+        assert trace.tool_calls[0] is None
 
     def test_assertions_with_none_trace(self):
         """Assertions should handle None gracefully or raise clearly."""

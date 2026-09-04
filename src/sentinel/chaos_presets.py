@@ -224,6 +224,41 @@ COMPLETE_OUTAGE = [
     ),
 ]
 
+def load_preset(name: str) -> list:
+    """Load a chaos preset by name.
+
+    Args:
+        name: Preset name (e.g., "production_incident", "deploy_friday").
+
+    Returns:
+        List of injector instances for the preset.
+
+    Raises:
+        KeyError: If the preset name is not found.
+    """
+    if name not in PRESETS:
+        raise KeyError(f"Unknown preset '{name}'. Available: {', '.join(PRESETS.keys())}")
+    return PRESETS[name]
+
+
+def list_presets() -> dict[str, str]:
+    """List all available presets with descriptions.
+
+    Returns:
+        Dict mapping preset name to a short description.
+    """
+    descriptions = {
+        "production_incident": "Database failure cascading to API and cache",
+        "deploy_friday": "Deploy tool failure with health check timeouts",
+        "traffic_spike": "Rate limits and database timeouts under load",
+        "network_partition": "Partial connectivity between services",
+        "time_travel": "Clock skew causing token/auth failures",
+        "memory_leak": "Progressive context exhaustion",
+        "complete_outage": "Everything is down",
+    }
+    return {name: descriptions.get(name, "Chaos preset") for name in PRESETS}
+
+
 # ──────────────────────────────────────────────────────
 # Registry for easy lookup
 # ──────────────────────────────────────────────────────

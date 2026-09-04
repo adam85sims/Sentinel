@@ -10,12 +10,15 @@ environment simulation beyond simple tool mocking.
 """
 from __future__ import annotations
 
+import itertools
 import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from itertools import count
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from sentinel.models import AgentTrace
 
 
 class MockToolError(Exception):
@@ -57,8 +60,9 @@ __all__ = [
 ]
 
 
-# Monotonic sequence generator for deterministic call ordering.
-_next_seq = count().__next__
+# Monotonic sequence generator for deterministic call ordering when two
+# calls land in the same time.time() tick (identical timestamps).
+_call_counter = itertools.count()
 
 
 @dataclass
@@ -75,7 +79,7 @@ class MockToolCall:
     timestamp: float = field(default_factory=time.time)
     # Monotonic sequence: guarantees deterministic ordering when two calls land
     # in the same time.time() tick (identical timestamps).
-    seq: int = field(default_factory=_next_seq)
+    sequence: int = field(default_factory=lambda: next(_call_counter))
 
 
 @dataclass
@@ -1000,7 +1004,53 @@ class EnvironmentBuilder:
 
 
 # ──────────────────────────────────────────────────────
+# _TracedTool — transparent proxy that records calls to AgentTrace
+# ──────────────────────────────────────────────────────
+
+
+class _TracedTool:
+    """Callable wrapper that transparently records tool calls into an AgentTrace."""
+
+    def __init__(self, tool: MockTool, trace: AgentTrace) -> None:
+        object.__setattr__(self, "_tool", tool)
+        object.__setattr__(self, "_trace", trace)
+
+    def __call__(self, **kwargs: Any) -> Any:
+        from sentinel.models import ToolCall
+        tool = object.__getattribute__(self, "_tool")
+        trace = object.__getattribute__(self, "_trace")
+        start = time.time()
+        error: str | None = None
+        result = None
+        try:
+            result = tool(**kwargs)
+            return result
+        except Exception as exc:
+            error = str(exc)
+            raise
+        finally:
+            duration_ms = (time.time() - start) * 1000
+            trace.tool_calls.append(
+                ToolCall(
+                    tool_name=tool.name,
+                    arguments=kwargs,
+                    result=result,
+                    duration_ms=duration_ms,
+                    error=error,
+                )
+            )
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(object.__getattribute__(self, "_tool"), name)
+
+    def __repr__(self) -> str:
+        tool = object.__getattribute__(self, "_tool")
+        return f"_TracedTool({tool!r})"
+
+
+# ──────────────────────────────────────────────────────
 # Environment — composed test environment
+# ──────────────────────────────────────────────────────
 # ──────────────────────────────────────────────────────
 
 
@@ -1015,6 +1065,7 @@ class Environment:
     apis: dict[str, MockAPI] = field(default_factory=dict)
     databases: dict[str, MockDatabase] = field(default_factory=dict)
     rate_limit: dict[str, Any] | None = None
+    _trace: AgentTrace | None = field(default=None, repr=False)
 
     def get_tool(self, name: str) -> MockTool | None:
         """Retrieve a mock tool by name."""
@@ -1023,6 +1074,12 @@ class Environment:
     def get_tools(self) -> dict[str, MockTool]:
         """Get all mock tools."""
         return self.tools
+
+    def set_trace(self, trace: AgentTrace) -> None:
+        """Bind an AgentTrace so all tool calls are automatically recorded."""
+        self._trace = trace
+        for name, tool in self.tools.items():
+            self.tools[name] = _TracedTool(tool, trace)
 
     def get_api(self, name: str) -> MockAPI | None:
         """Retrieve a mock API by name."""
@@ -1046,7 +1103,7 @@ class Environment:
         calls = []
         for tool in self.tools.values():
             calls.extend(tool.calls)
-        return sorted(calls, key=lambda c: (c.timestamp, c.seq))
+        return sorted(calls, key=lambda c: (c.timestamp, c.sequence))
 
     def reset(self) -> None:
         """Clear all recorded calls."""

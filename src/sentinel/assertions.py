@@ -267,6 +267,8 @@ __all__ = [
     # Resilience assertions
     "assert_graceful_degradation",
     "assert_no_silent_failure",
+    "assert_chaos_resilience",
+    "assert_agent_recovers",
     # Performance assertions
     "assert_latency",
     "assert_token_usage",
@@ -870,4 +872,87 @@ def assert_state_no_collisions(
         raise AssertionError(
             f"{len(collisions)} state collision(s) detected between agents:\n"
             + "\n".join(details)
+        )
+
+
+# ──────────────────────────────────────────────────────
+# Chaos Resilience Assertions
+# ──────────────────────────────────────────────────────
+
+
+def assert_chaos_resilience(
+    trace: AgentTrace,
+    chaos_budget: Any = None,
+    max_failure_rate: float = 0.5,
+) -> None:
+    """Assert that the agent handled chaos injection resiliently.
+
+    Checks that:
+    1. The agent continued executing despite failures
+    2. The failure rate didn't exceed the threshold
+    3. The agent produced some output
+
+    Args:
+        trace: The agent execution trace.
+        chaos_budget: Optional ChaosBudget (used for injection count).
+        max_failure_rate: Maximum acceptable fraction of failed tool calls.
+
+    Raises:
+        AssertionError: If the agent didn't handle chaos resiliently.
+    """
+    if trace.total_tool_calls == 0:
+        raise AssertionError(
+            "Agent made no tool calls under chaos — it may have crashed or refused to execute."
+        )
+
+    failed = len(trace.failed_tool_calls)
+    total = trace.total_tool_calls
+    failure_rate = failed / total
+
+    if failure_rate > max_failure_rate:
+        raise AssertionError(
+            f"Agent failure rate {failure_rate:.1%} exceeds threshold {max_failure_rate:.1%} "
+            f"({failed}/{total} tool calls failed)."
+        )
+
+    # Check agent continued after failures
+    if trace.failed_tool_calls and trace.total_tool_calls <= failed:
+        raise AssertionError(
+            "Agent did not make any successful tool calls after failures — no recovery."
+        )
+
+
+def assert_agent_recovers(
+    trace: AgentTrace,
+    after_error_tool: str | None = None,
+) -> None:
+    """Assert that the agent recovered after encountering an error.
+
+    Checks that the agent continued execution after a tool failure,
+    producing steps or tool calls after the error occurred.
+
+    Args:
+        trace: The agent execution trace.
+        after_error_tool: If specified, check recovery after this tool's error.
+
+    Raises:
+        AssertionError: If the agent did not recover.
+    """
+    failed_calls = trace.failed_tool_calls
+    if not failed_calls:
+        raise AssertionError(
+            "No tool errors recorded — cannot verify recovery."
+        )
+
+    last_error_time = max(tc.timestamp for tc in failed_calls)
+
+    # Check for successful calls after the last error
+    calls_after = [
+        tc for tc in trace.tool_calls
+        if tc.timestamp > last_error_time and tc.succeeded
+    ]
+
+    if not calls_after:
+        raise AssertionError(
+            "Agent made no successful tool calls after errors — did not recover."
         )

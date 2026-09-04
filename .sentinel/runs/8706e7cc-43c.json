@@ -1,0 +1,240 @@
+{
+  "run_id": "8706e7cc-43c",
+  "scenario_id": "rate-limit-retry",
+  "scenario_name": "Rate Limit Retry with Backoff",
+  "status": "fail",
+  "started_at": "2026-07-22T11:15:59.752301+00:00",
+  "completed_at": "2026-07-22T11:15:59.752301+00:00",
+  "result": {
+    "scenario_id": "rate-limit-retry",
+    "scenario_name": "Rate Limit Retry with Backoff",
+    "passed": false,
+    "duration_ms": 0.0,
+    "error": null,
+    "timestamp": 1784718959.7523015,
+    "assertion_results": [
+      {
+        "assertion_name": "tool_fallback_used",
+        "passed": false,
+        "error_message": "Fallback not triggered",
+        "duration_ms": 1.0
+      },
+      {
+        "assertion_name": "graceful_degradation",
+        "passed": false,
+        "error_message": "Agent crashed or hung",
+        "duration_ms": 0.8
+      },
+      {
+        "assertion_name": "error_handling",
+        "passed": false,
+        "error_message": "Error propagated unhandled",
+        "duration_ms": 0.5
+      },
+      {
+        "assertion_name": "response_quality",
+        "passed": false,
+        "error_message": "No useful response produced",
+        "duration_ms": 0.3
+      }
+    ],
+    "trace": {
+      "total_steps": 7,
+      "total_tool_calls": 3,
+      "total_duration_ms": 0.0,
+      "tool_names_called": [
+        "search_api"
+      ],
+      "failed_tool_calls": [
+        {
+          "tool_name": "search_api",
+          "arguments": {
+            "attempt": 1
+          },
+          "result": {
+            "error": "429 Too Many Requests",
+            "succeeded": false
+          },
+          "duration_ms": 50.0,
+          "error": "429 Rate Limited",
+          "step_id": 2,
+          "timestamp": 1784718959.7523015
+        },
+        {
+          "tool_name": "search_api",
+          "arguments": {
+            "attempt": 2
+          },
+          "result": {
+            "error": "429 Too Many Requests",
+            "succeeded": false
+          },
+          "duration_ms": 45.0,
+          "error": "429 Rate Limited",
+          "step_id": 4,
+          "timestamp": 1784718959.7523015
+        },
+        {
+          "tool_name": "search_api",
+          "arguments": {
+            "attempt": 3
+          },
+          "result": {
+            "results": [
+              {
+                "name": "Ergo Keyboard Pro",
+                "price": 149.99
+              },
+              {
+                "name": "Split Keyboard Elite",
+                "price": 199.99
+              }
+            ]
+          },
+          "duration_ms": 120.0,
+          "error": null,
+          "step_id": 6,
+          "timestamp": 1784718959.7523015
+        }
+      ],
+      "errors": [
+        {
+          "message": "Rate limit exceeded",
+          "severity": "medium",
+          "step_id": 2,
+          "recoverable": true,
+          "timestamp": 1784718959.7523015
+        },
+        {
+          "message": "Rate limit exceeded on retry",
+          "severity": "medium",
+          "step_id": 4,
+          "recoverable": true,
+          "timestamp": 1784718959.7523015
+        }
+      ],
+      "state_changes": [],
+      "steps": [
+        {
+          "step_id": 1,
+          "action": "reason",
+          "input": "Search catalog with retry strategy",
+          "output": "Will search and retry with backoff if rate limited.",
+          "duration_ms": 3.0,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_id": 2,
+          "action": "tool_call",
+          "input": "search_api(query='ergonomic keyboard') [attempt 1]",
+          "output": "{\"error\": \"429 Too Many Requests\", \"succeeded\": false}",
+          "duration_ms": 50.0,
+          "tool_calls": [
+            {
+              "tool_name": "search_api",
+              "arguments": {
+                "attempt": 1
+              },
+              "result": {
+                "error": "429 Too Many Requests",
+                "succeeded": false
+              },
+              "duration_ms": 50.0,
+              "error": "429 Rate Limited",
+              "step_id": 2,
+              "timestamp": 1784718959.7523015
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 3,
+          "action": "error",
+          "input": "Waiting 2000ms before retry",
+          "output": "Exponential backoff: attempt 2 after 2s delay",
+          "duration_ms": 2000.0,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_id": 4,
+          "action": "tool_call",
+          "input": "search_api(query='ergonomic keyboard') [attempt 2]",
+          "output": "{\"error\": \"429 Too Many Requests\", \"succeeded\": false}",
+          "duration_ms": 45.0,
+          "tool_calls": [
+            {
+              "tool_name": "search_api",
+              "arguments": {
+                "attempt": 2
+              },
+              "result": {
+                "error": "429 Too Many Requests",
+                "succeeded": false
+              },
+              "duration_ms": 45.0,
+              "error": "429 Rate Limited",
+              "step_id": 4,
+              "timestamp": 1784718959.7523015
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 5,
+          "action": "error",
+          "input": "Waiting 4000ms before retry (backoff x2)",
+          "output": "Exponential backoff: attempt 3 after 4s delay",
+          "duration_ms": 4000.0,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_id": 6,
+          "action": "tool_call",
+          "input": "search_api(query='ergonomic keyboard') [attempt 3]",
+          "output": "{\"results\": [{\"name\": \"Ergo Keyboard Pro\", \"price\": 149.99}, {\"name\": \"Split Keyboard Elite\", \"price\": 199.99}]}",
+          "duration_ms": 120.0,
+          "tool_calls": [
+            {
+              "tool_name": "search_api",
+              "arguments": {
+                "attempt": 3
+              },
+              "result": {
+                "results": [
+                  {
+                    "name": "Ergo Keyboard Pro",
+                    "price": 149.99
+                  },
+                  {
+                    "name": "Split Keyboard Elite",
+                    "price": 199.99
+                  }
+                ]
+              },
+              "duration_ms": 120.0,
+              "error": null,
+              "step_id": 6,
+              "timestamp": 1784718959.7523015
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 7,
+          "action": "respond",
+          "input": "Return search results",
+          "output": "Found 2 ergonomic keyboards: Ergo Keyboard Pro ($149.99), Split Keyboard Elite ($199.99).",
+          "duration_ms": 2.5,
+          "tool_calls": [],
+          "error": null
+        }
+      ],
+      "metadata": {},
+      "start_time": 1784718959.7523015,
+      "end_time": 1784718959.7523015
+    }
+  }
+}

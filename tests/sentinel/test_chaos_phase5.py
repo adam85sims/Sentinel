@@ -130,7 +130,7 @@ class TestContextDegradation:
         assert levels[0] == 0.0
         # Level should increase non-linearly (quadratic)
         # Check that early diffs are non-zero and increasing
-        post_start = [lv for lv in levels if lv > 0]
+        post_start = [level for level in levels if level > 0]
         assert len(post_start) >= 5, "Need enough steps to see acceleration"
         # First few diffs should be increasing (quadratic region)
         diffs = [post_start[i+1] - post_start[i] for i in range(min(3, len(post_start)-1))]
@@ -252,6 +252,27 @@ class TestCascadingFailures:
         assert target == "user_interface"
         # auth -> api_server
         target = cascade._derive_cascading_target({"tool_name": "auth"})
+        assert target == "api_server"
+
+    def test_cascade_target_derivation_custom_graph(self):
+        """Cascading target should follow custom dependency graph."""
+        graph = {
+            "payment_gateway": "order_service",
+            "order_service": "frontend_ui",
+            "db_replica": "backup_manager",
+        }
+        cascade = CascadingFailures(dependency_graph=graph, seed=42)
+
+        # Exact match
+        target = cascade._derive_cascading_target({"tool_name": "payment_gateway"})
+        assert target == "order_service"
+
+        # Case-insensitive prefix/substring match
+        target = cascade._derive_cascading_target({"tool_name": "my_db_replica_prod"})
+        assert target == "backup_manager"
+
+        # Fallback to default heuristic if not in custom graph
+        target = cascade._derive_cascading_target({"tool_name": "database"})
         assert target == "api_server"
 
     def test_cascade_error_derivation(self):

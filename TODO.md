@@ -1,6 +1,6 @@
 # Sentinel — Development Queue
 
-> All phases complete. Queue is empty.
+> Phase 7 is currently pending.
 
 ## Rules
 
@@ -71,6 +71,18 @@
 - [x] Implement MemoryPressure chaos injector
 - [x] Add chaos scenario presets (production incident, deploy Friday, traffic spike, etc.)
 - [x] Write benchmark: Sentinel chaos vs real production logs (docs/CHAOS_BENCHMARK.md)
+
+## Phase 7: WebUI & Next-Gen Features
+
+- [ ] Design and implement a WebUI dashboard for Sentinel (running tests, viewing trace visualization, comparing baselines)
+- [ ] Add model endpoint selector in the WebUI to point test runs at different LLMs/providers (OpenAI, Anthropic, local)
+- [ ] Add interactive chaos configuration builder in the WebUI
+- [ ] Implement live log/span streaming in WebUI using WebSockets or Server-Sent Events (SSE)
+- [ ] Implement trace snapshot comparison diffing UI (visual git diff of baseline vs current run)
+- [ ] Add a `pytest` plugin for native reporting and direct execution of YAML scenarios
+- [ ] Add asynchronous chaos injection support for native async agent frameworks
+- [ ] Implement built-in retry assertions (e.g., `assert_retried_after_failure(tool_name, max_retries=3)`)
+- [ ] Implement Prometheus metrics exporter for CI/CD run dashboards
 
 ---
 

@@ -1,0 +1,233 @@
+{
+  "run_id": "0095c2ef-f20",
+  "scenario_id": "network-partition-db",
+  "scenario_name": "Network Partition Database Recovery",
+  "status": "fail",
+  "started_at": "2026-07-22T11:08:14.744767+00:00",
+  "completed_at": "2026-07-22T11:08:14.744767+00:00",
+  "result": {
+    "scenario_id": "network-partition-db",
+    "scenario_name": "Network Partition Database Recovery",
+    "passed": false,
+    "duration_ms": 0.0,
+    "error": null,
+    "timestamp": 1784718494.7447674,
+    "assertion_results": [
+      {
+        "assertion_name": "tool_fallback_used",
+        "passed": false,
+        "error_message": "Fallback not triggered",
+        "duration_ms": 1.0
+      },
+      {
+        "assertion_name": "graceful_degradation",
+        "passed": false,
+        "error_message": "Agent crashed or hung",
+        "duration_ms": 0.8
+      },
+      {
+        "assertion_name": "error_handling",
+        "passed": false,
+        "error_message": "Error propagated unhandled",
+        "duration_ms": 0.5
+      },
+      {
+        "assertion_name": "response_quality",
+        "passed": false,
+        "error_message": "No useful response produced",
+        "duration_ms": 0.3
+      }
+    ],
+    "trace": {
+      "total_steps": 5,
+      "total_tool_calls": 3,
+      "total_duration_ms": 0.0,
+      "tool_names_called": [
+        "primary_database",
+        "replica_east",
+        "replica_west"
+      ],
+      "failed_tool_calls": [
+        {
+          "tool_name": "primary_database",
+          "arguments": {
+            "query": "inventory"
+          },
+          "result": {
+            "error": "Connection refused: network unreachable",
+            "succeeded": false
+          },
+          "duration_ms": 5012.0,
+          "error": "Network unreachable",
+          "step_id": 2,
+          "timestamp": 1784718494.7447674
+        },
+        {
+          "tool_name": "replica_east",
+          "arguments": {
+            "query": "inventory"
+          },
+          "result": {
+            "result": {
+              "warehouse": "east",
+              "items": [
+                {
+                  "sku": "WH-E-001",
+                  "quantity": 234
+                }
+              ]
+            },
+            "succeeded": true
+          },
+          "duration_ms": 120.0,
+          "error": null,
+          "step_id": 3,
+          "timestamp": 1784718494.7447674
+        },
+        {
+          "tool_name": "replica_west",
+          "arguments": {
+            "query": "inventory"
+          },
+          "result": {
+            "result": {
+              "warehouse": "west",
+              "items": [
+                {
+                  "sku": "WH-W-001",
+                  "quantity": 156
+                }
+              ]
+            },
+            "succeeded": true
+          },
+          "duration_ms": 135.0,
+          "error": null,
+          "step_id": 4,
+          "timestamp": 1784718494.7447674
+        }
+      ],
+      "errors": [
+        {
+          "message": "Connection refused: network unreachable",
+          "severity": "high",
+          "step_id": 2,
+          "recoverable": true,
+          "timestamp": 1784718494.7447674
+        }
+      ],
+      "state_changes": [],
+      "steps": [
+        {
+          "step_id": 1,
+          "action": "reason",
+          "input": "Inventory query \u2014 check all data sources",
+          "output": "Will try primary DB, then replicas if partition detected.",
+          "duration_ms": 3.8,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_id": 2,
+          "action": "tool_call",
+          "input": "primary_database(query='inventory')",
+          "output": "{\"error\": \"Connection refused: network unreachable\", \"succeeded\": false}",
+          "duration_ms": 5012.0,
+          "tool_calls": [
+            {
+              "tool_name": "primary_database",
+              "arguments": {
+                "query": "inventory"
+              },
+              "result": {
+                "error": "Connection refused: network unreachable",
+                "succeeded": false
+              },
+              "duration_ms": 5012.0,
+              "error": "Network unreachable",
+              "step_id": 2,
+              "timestamp": 1784718494.7447674
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 3,
+          "action": "tool_call",
+          "input": "replica_east(query='inventory')",
+          "output": "{\"result\": {\"warehouse\": \"east\", \"items\": [{\"sku\": \"WH-E-001\", \"quantity\": 234}]}, \"succeeded\": true}",
+          "duration_ms": 120.0,
+          "tool_calls": [
+            {
+              "tool_name": "replica_east",
+              "arguments": {
+                "query": "inventory"
+              },
+              "result": {
+                "result": {
+                  "warehouse": "east",
+                  "items": [
+                    {
+                      "sku": "WH-E-001",
+                      "quantity": 234
+                    }
+                  ]
+                },
+                "succeeded": true
+              },
+              "duration_ms": 120.0,
+              "error": null,
+              "step_id": 3,
+              "timestamp": 1784718494.7447674
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 4,
+          "action": "tool_call",
+          "input": "replica_west(query='inventory')",
+          "output": "{\"result\": {\"warehouse\": \"west\", \"items\": [{\"sku\": \"WH-W-001\", \"quantity\": 156}]}, \"succeeded\": true}",
+          "duration_ms": 135.0,
+          "tool_calls": [
+            {
+              "tool_name": "replica_west",
+              "arguments": {
+                "query": "inventory"
+              },
+              "result": {
+                "result": {
+                  "warehouse": "west",
+                  "items": [
+                    {
+                      "sku": "WH-W-001",
+                      "quantity": 156
+                    }
+                  ]
+                },
+                "succeeded": true
+              },
+              "duration_ms": 135.0,
+              "error": null,
+              "step_id": 4,
+              "timestamp": 1784718494.7447674
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 5,
+          "action": "respond",
+          "input": "Aggregate replica data",
+          "output": "Combined inventory from east (234 units) and west (156 units) warehouses.",
+          "duration_ms": 5.0,
+          "tool_calls": [],
+          "error": null
+        }
+      ],
+      "metadata": {},
+      "start_time": 1784718494.7447674,
+      "end_time": 1784718494.7447674
+    }
+  }
+}

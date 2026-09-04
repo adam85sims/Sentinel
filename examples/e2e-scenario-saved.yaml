@@ -1,0 +1,7 @@
+id: e2e-scenario-saved
+name: Saved E2E Scenario
+description: Created during playwright tests
+task: Do something cool
+tags:
+- test-saved
+timeout_seconds: 22

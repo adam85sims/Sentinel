@@ -1,0 +1,62 @@
+id: multi-tool-resilience
+name: Multi-Tool Full Chaos Resilience
+description: |
+  Stress test with multiple chaos injectors active simultaneously.
+  The agent must handle concurrent failures across search, database,
+  API, and email tools. Tests the agent's ability to prioritize
+  failures, use fallbacks, and still produce a useful result when
+  most of its toolchain is degraded. This is the comprehensive
+  smoke test for agent resilience.
+task: "You are a support agent handling a complex customer complaint. The customer reports: (1) they can't find their order, (2) the tracking page is broken, (3) they haven't received the confirmation email. Look up the order, check tracking status, and send a resolution email. Use any available fallbacks when tools fail."
+env_config:
+  tools:
+    search:
+      side_effect: "timeout"
+      error_message: "Search service timeout after 10s"
+    database:
+      side_effect: "error"
+      error_message: "Database locked: too many connections (max 100 reached)"
+    api_server:
+      response:
+        tracking_status: "in_transit"
+        carrier: "FedEx"
+        tracking_number: "FX-9876543210"
+        estimated_delivery: "2026-07-25"
+      side_effect: "intermittent"
+      failure_rate: 0.5
+    email:
+      side_effect: "rate_limit"
+      error_message: "Email service rate limited: 429 Too Many Requests"
+      retry_after_ms: 5000
+    cache:
+      response:
+        recent_orders:
+          - order_id: "ORD-7721"
+            customer: "Alice Cooper"
+            product: "Premium Headphones"
+            status: "shipped"
+            date: "2026-07-18"
+chaos_config:
+  multi_inject:
+    enabled: true
+    injectors:
+      - type: timeout
+        target: search
+        probability: 1.0
+      - type: error
+        target: database
+        probability: 1.0
+      - type: intermittent
+        target: api_server
+        probability: 0.5
+      - type: rate_limit
+        target: email
+        probability: 0.8
+    orchestration: "simultaneous"
+    degradation_budget: "allow_partial_results"
+tags:
+  - chaos
+  - resilience
+  - production
+  - smoke-test
+timeout_seconds: 30

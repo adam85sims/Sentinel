@@ -34,9 +34,6 @@ class TestMockTool:
         assert result == {"ok": True}
 
     def test_error_probability(self):
-        import random
-
-        random.seed(42)  # Deterministic
         tool = MockTool(
             "search", response="ok", error_probability=1.0  # Always error
         )

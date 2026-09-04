@@ -1,0 +1,248 @@
+{
+  "run_id": "5446df61-559",
+  "scenario_id": "memory-pressure-evict",
+  "scenario_name": "Memory Pressure Context Eviction",
+  "status": "fail",
+  "started_at": "2026-07-22T11:15:59.750303+00:00",
+  "completed_at": "2026-07-22T11:15:59.750303+00:00",
+  "result": {
+    "scenario_id": "memory-pressure-evict",
+    "scenario_name": "Memory Pressure Context Eviction",
+    "passed": false,
+    "duration_ms": 0.0,
+    "error": null,
+    "timestamp": 1784718959.7503035,
+    "assertion_results": [
+      {
+        "assertion_name": "tool_fallback_used",
+        "passed": false,
+        "error_message": "Fallback not triggered",
+        "duration_ms": 1.0
+      },
+      {
+        "assertion_name": "graceful_degradation",
+        "passed": false,
+        "error_message": "Agent crashed or hung",
+        "duration_ms": 0.8
+      },
+      {
+        "assertion_name": "error_handling",
+        "passed": false,
+        "error_message": "Error propagated unhandled",
+        "duration_ms": 0.5
+      },
+      {
+        "assertion_name": "response_quality",
+        "passed": false,
+        "error_message": "No useful response produced",
+        "duration_ms": 0.3
+      }
+    ],
+    "trace": {
+      "total_steps": 6,
+      "total_tool_calls": 3,
+      "total_duration_ms": 0.0,
+      "tool_names_called": [
+        "session_manager",
+        "order_service",
+        "payment_service"
+      ],
+      "failed_tool_calls": [
+        {
+          "tool_name": "session_manager",
+          "arguments": {
+            "action": "init"
+          },
+          "result": {
+            "result": {
+              "session_id": "sess_a1b2c3d4",
+              "user": "authenticated"
+            },
+            "succeeded": true
+          },
+          "duration_ms": 10.0,
+          "error": null,
+          "step_id": 2,
+          "timestamp": 1784718959.7503035
+        },
+        {
+          "tool_name": "order_service",
+          "arguments": {
+            "action": "create"
+          },
+          "result": {
+            "result": {
+              "order_id": "ORD-5521",
+              "total": 215.98
+            },
+            "succeeded": true
+          },
+          "duration_ms": 25.0,
+          "error": null,
+          "step_id": 3,
+          "timestamp": 1784718959.7503035
+        },
+        {
+          "tool_name": "payment_service",
+          "arguments": {
+            "action": "select"
+          },
+          "result": {
+            "result": {
+              "selected": "credit_card",
+              "last_four": "4242"
+            },
+            "succeeded": true
+          },
+          "duration_ms": 18.0,
+          "error": null,
+          "step_id": 4,
+          "timestamp": 1784718959.7503035
+        }
+      ],
+      "errors": [],
+      "state_changes": [
+        {
+          "key": "session",
+          "old_value": null,
+          "new_value": "sess_a1b2c3d4",
+          "step_id": 2,
+          "timestamp": 1784718959.7503035
+        },
+        {
+          "key": "order_id",
+          "old_value": null,
+          "new_value": "ORD-5521",
+          "step_id": 3,
+          "timestamp": 1784718959.7503035
+        },
+        {
+          "key": "payment_method",
+          "old_value": null,
+          "new_value": "credit_card",
+          "step_id": 4,
+          "timestamp": 1784718959.7503035
+        }
+      ],
+      "steps": [
+        {
+          "step_id": 1,
+          "action": "reason",
+          "input": "Initialize order processing session",
+          "output": "Will maintain session, order, and payment state throughout.",
+          "duration_ms": 4.5,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_id": 2,
+          "action": "tool_call",
+          "input": "session_manager(action='init')",
+          "output": "{\"result\": {\"session_id\": \"sess_a1b2c3d4\", \"user\": \"authenticated\"}, \"succeeded\": true}",
+          "duration_ms": 10.0,
+          "tool_calls": [
+            {
+              "tool_name": "session_manager",
+              "arguments": {
+                "action": "init"
+              },
+              "result": {
+                "result": {
+                  "session_id": "sess_a1b2c3d4",
+                  "user": "authenticated"
+                },
+                "succeeded": true
+              },
+              "duration_ms": 10.0,
+              "error": null,
+              "step_id": 2,
+              "timestamp": 1784718959.7503035
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 3,
+          "action": "tool_call",
+          "input": "order_service(action='create')",
+          "output": "{\"result\": {\"order_id\": \"ORD-5521\", \"total\": 215.98}, \"succeeded\": true}",
+          "duration_ms": 25.0,
+          "tool_calls": [
+            {
+              "tool_name": "order_service",
+              "arguments": {
+                "action": "create"
+              },
+              "result": {
+                "result": {
+                  "order_id": "ORD-5521",
+                  "total": 215.98
+                },
+                "succeeded": true
+              },
+              "duration_ms": 25.0,
+              "error": null,
+              "step_id": 3,
+              "timestamp": 1784718959.7503035
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 4,
+          "action": "tool_call",
+          "input": "payment_service(action='select')",
+          "output": "{\"result\": {\"selected\": \"credit_card\", \"last_four\": \"4242\"}, \"succeeded\": true}",
+          "duration_ms": 18.0,
+          "tool_calls": [
+            {
+              "tool_name": "payment_service",
+              "arguments": {
+                "action": "select"
+              },
+              "result": {
+                "result": {
+                  "selected": "credit_card",
+                  "last_four": "4242"
+                },
+                "succeeded": true
+              },
+              "duration_ms": 18.0,
+              "error": null,
+              "step_id": 4,
+              "timestamp": 1784718959.7503035
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_id": 5,
+          "action": "error",
+          "input": "Memory pressure detected \u2014 evicting non-critical context",
+          "output": "Evicted 3 non-critical entries. Protected session, order, payment.",
+          "duration_ms": 2.0,
+          "tool_calls": [],
+          "error": {
+            "message": "Context eviction triggered at 70% threshold",
+            "severity": "medium",
+            "step_id": 5,
+            "recoverable": true,
+            "timestamp": 1784718959.7503035
+          }
+        },
+        {
+          "step_id": 6,
+          "action": "respond",
+          "input": "Complete order with critical state preserved",
+          "output": "Order ORD-5521 completed. Payment via credit card ****4242. Total: $215.98.",
+          "duration_ms": 3.5,
+          "tool_calls": [],
+          "error": null
+        }
+      ],
+      "metadata": {},
+      "start_time": 1784718959.7503035,
+      "end_time": 1784718959.7503035
+    }
+  }
+}

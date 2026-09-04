@@ -51,6 +51,7 @@ web = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
     "sse-starlette>=2.0.0",
+    "httpx>=0.27.0",  # web/api/models.py imports it at module load; was missing -> installed WebUI crashed (B4)
 ]
 
 # Development
@@ -94,7 +95,11 @@ Repository = "https://github.com/adam85sims/sentinel"
 Issues = "https://github.com/adam85sims/sentinel/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sentinel"]
+# NOTE: `governance` and `common` are top-level packages the audit harness needs
+# (web/api/governance.py does `from governance.audit import run_audit`, and the
+# governance package imports `common.*`). They MUST ship in the wheel or the
+# installed WebUI crashes. See planning/PRODUCTIZATION_BLOCKERS.md (B1).
+packages = ["src/sentinel", "governance", "common"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

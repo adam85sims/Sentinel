@@ -6,6 +6,7 @@ Endpoints for running audits and fetching audit results/history.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from datetime import datetime
@@ -14,8 +15,11 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-# Resolve project root
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
+# Resolve project root EXPLICITLY, never by counting py.file parents — that broke
+# when the module lived in an installed wheel (resolved to the interpreter lib dir).
+# Default = the current working directory (where the user ran `sentinel serve`);
+# override with SENTINEL_PROJECT_ROOT. See planning/PRODUCTIZATION_BLOCKERS.md (B2).
+_PROJECT_ROOT = Path(os.environ.get("SENTINEL_PROJECT_ROOT") or Path.cwd()).resolve()
 _GOV_REPORTS_DIR = _PROJECT_ROOT / "governance" / "reports"
 
 # Ensure project root is in sys.path so we can import from governance
